@@ -1,7 +1,6 @@
 _subdirectory: template
 _exclude:
   - copier.yml
-  - pyproject.toml
   - ".git"
 
 project_name:

@@ -37,6 +37,9 @@ jobs:
       - name: Verify project.godot exists
         run: test -f /tmp/test-project-defaults/project.godot
 
+      - name: Verify pyproject.toml exists
+        run: test -f /tmp/test-project-defaults/pyproject.toml
+
       - name: Verify no NetworkManager in project.godot
         run: |
           if grep -q "NetworkManager" /tmp/test-project-defaults/project.godot; then
@@ -103,6 +106,9 @@ jobs:
         run: |
           uvx copier copy --defaults --trust --data multiplayer=true . /tmp/test-project-mp
           ls /tmp/test-project-mp
+
+      - name: Verify pyproject.toml exists
+        run: test -f /tmp/test-project-mp/pyproject.toml
 
       - name: Verify NetworkManager in project.godot
         run: |
