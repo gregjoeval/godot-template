@@ -263,3 +263,35 @@ If you encounter a warning that genuinely cannot be resolved with typed code:
 2. If not, create a new utility file with a focused purpose
 3. Add the new file to the `exclude` list in `.pre-commit-config.yaml`
 4. Never scatter `@warning_ignore` across feature code
+{% if multiplayer %}
+## Signal and RPC Type Consistency
+
+Signal declarations and their callback parameters must use matching types.
+RPC sender and receiver must use identical type annotations.
+
+```gdscript
+signal health_changed(new_health: int, max_health: int)
+
+# Callback types must match the signal declaration
+func _on_health_changed(new_health: int, max_health: int) -> void:
+    pass
+```
+
+### RPC Type Safety
+
+RPCs must use identical type annotations on both sender and receiver. Mismatched types cause runtime errors in multiplayer.
+
+```gdscript
+# Server receives from client
+@rpc("any_peer")
+func request_action(value: int) -> void:
+    pass
+
+# Client calls with same type
+func _trigger_action(value: int) -> void:
+    request_action.rpc(value)
+```
+
+Use `@rpc("authority", "call_local")` for server broadcasts that also run on the server.
+Use `@rpc("any_peer")` for client requests that the server should validate.
+{% endif %}

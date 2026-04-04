@@ -235,6 +235,20 @@ Bypass: `SKIP=gdtest git commit ...` (or `SKIP=gdtypecheck,gdtest` to skip both 
 
 See `docs/DECISIONS.md` for domain language, architectural patterns, collision layers, and key decisions.
 Update this file as the project evolves — agents reference it for project-specific context.
+{% if multiplayer %}
+## Multiplayer Patterns
+
+This project uses Godot's high-level multiplayer API with server-authoritative architecture.
+
+- **Transport**: `ENetMultiplayerPeer` for networked play, `OfflineMultiplayerPeer` for singleplayer
+- **Authority**: Server (`multiplayer.is_server()`) owns game state. Clients request actions via RPC.
+- **RPC conventions**:
+  - `@rpc("any_peer")` — client → server requests (server validates and acts)
+  - `@rpc("authority", "call_local")` — server → all clients broadcasts (including server itself)
+- **Testing**: Use `GdUnitTestHelper.setup_offline_multiplayer(self)` to make `multiplayer.is_server()` return `true` in tests
+
+See `docs/DECISIONS.md` for project-specific multiplayer decisions (NetworkManager structure, sync properties, etc.).
+{% endif %}
 
 ## Persistent Agent Memory
 
