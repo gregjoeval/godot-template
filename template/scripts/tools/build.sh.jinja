@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Build script: exports Linux and Windows builds, zips them, and reports sizes.
+# Usage: ./scripts/tools/build.sh [path-to-godot] [--debug] [--version VERSION]
+
+set -euo pipefail
+
+GODOT="${1:-godot}"
+EXPORT_FLAG="--export-release"
+VERSION="dev"
+
+# Parse flags from any position
+for i in "$@"; do
+    case "$i" in
+        --debug) EXPORT_FLAG="--export-debug"; echo "Using debug export mode" ;;
+        --version) ;; # value handled below
+    esac
+done
+
+# Extract --version value
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --version) VERSION="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+echo "=== Importing project resources ==="
+"$GODOT" --headless --import --path . 2>&1 | tail -1 || true
+
+echo ""
+echo "=== Exporting Linux x86_64 ==="
+mkdir -p export/linux
+"$GODOT" --headless $EXPORT_FLAG "Linux x86_64" --path .
+
+echo ""
+echo "=== Exporting Windows x86_64 ==="
+mkdir -p export/windows
+"$GODOT" --headless $EXPORT_FLAG "Windows x86_64" --path .
+
+echo ""
+echo "=== Packaging (version: ${VERSION}) ==="
+(cd export/linux && zip -9 "../../{{ project_slug }}-${VERSION}-linux-x86_64.zip" {{ project_slug }}.x86_64)
+(cd export/windows && zip -9 "../../{{ project_slug }}-${VERSION}-windows-x86_64.zip" {{ project_slug }}.exe {{ project_slug }}.console.exe 2>/dev/null || \
+  zip -9 "../../{{ project_slug }}-${VERSION}-windows-x86_64.zip" {{ project_slug }}.exe)
+
+echo ""
+echo "=== Build sizes ==="
+ls -lh "{{ project_slug }}-${VERSION}-linux-x86_64.zip" "{{ project_slug }}-${VERSION}-windows-x86_64.zip"
+echo ""
+echo "Build complete!"
