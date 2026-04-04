@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Pre-commit hook: auto-generate missing .uid sidecar files for staged .gd, .gdshader,
+# and .gdextension files, then bridge to the pre-commit framework (gdformat, gdlint,
+# typecheck, normalization).
+# Godot 4.6 requires a .uid file for every .gd, .gdshader, and .gdextension file.
+
+staged_uid_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(gd|gdshader|gdextension)$' || true)
+
+# Capture originally-staged scene/resource files BEFORE pre-commit runs normalization
+originally_staged_scenes=$(git diff --cached --name-only -- '*.tscn' '*.tres' 'project.godot' 2>/dev/null || true)
+
+# --- UID sidecar generation for .gd, .gdshader, .gdextension files ---
+if [ -n "$staged_uid_files" ]; then
+    generated=()
+
+    while IFS= read -r gd_file; do
+        uid_file="${gd_file}.uid"
+
+        # Skip if .uid is already staged or tracked
+        if git ls-files --cached -- "$uid_file" | grep -q .; then
+            continue
+        fi
+
+        # Skip if .uid exists on disk (maybe just not staged — stage it)
+        if [ -f "$uid_file" ]; then
+            git add "$uid_file"
+            generated+=("$uid_file (staged existing)")
+            continue
+        fi
+
+        # Generate a random uid: 13 chars from [a-z0-9]
+        random_id=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 13)
+        echo "uid://${random_id}" > "$uid_file"
+        git add "$uid_file"
+        generated+=("$uid_file (created)")
+    done <<< "$staged_uid_files"
+
+    if [ ${#generated[@]} -gt 0 ]; then
+        echo "pre-commit: auto-generated .uid sidecar files:"
+        for f in "${generated[@]}"; do
+            echo "  $f"
+        done
+    fi
+fi
+
+# Bridge to pre-commit framework (gdformat, gdlint, typecheck, normalization)
+if command -v pre-commit &>/dev/null; then
+    pre-commit run --hook-stage pre-commit || exit $?
+else
+    echo "pre-commit: WARNING — 'pre-commit' not installed; skipping gdformat/gdlint/typecheck"
+    echo "pre-commit: Run 'pip install pre-commit && pre-commit install' to enable validation"
+fi
+
+# Re-stage only originally-staged scene/resource files that were modified by normalization
+if [ -n "$originally_staged_scenes" ]; then
+    changed=$(echo "$originally_staged_scenes" | while read -r f; do
+        git diff --quiet -- "$f" 2>/dev/null || echo "$f"
+    done)
+    if [ -n "$changed" ]; then
+        echo "$changed" | xargs git add
+        echo "pre-commit: re-staged normalized Godot files"
+    fi
+fi
+
+exit 0

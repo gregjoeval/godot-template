@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Bridge to pre-commit framework (commitizen commit-msg validation)
+if command -v pre-commit &>/dev/null; then
+    pre-commit run --hook-stage commit-msg --commit-msg-filename "$1" || exit $?
+else
+    echo "commit-msg: WARNING -- pre-commit not installed; skipping commit message validation"
+fi

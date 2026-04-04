@@ -1,0 +1,11 @@
+filter:
+  exclude:
+    - "addons/"
+    - ".godot/"
+
+disable:
+  - class-definitions-order
+  - class-variable-name
+  - max-returns
+  - max-file-lines
+  - max-public-methods
