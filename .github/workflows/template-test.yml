@@ -1,0 +1,160 @@
+name: Template Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: template-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.6-stable"
+
+jobs:
+  test-defaults:
+    name: Test (multiplayer=false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install copier
+        run: uv pip install --system copier>=9.0
+
+      - name: Generate project (defaults, multiplayer=false)
+        run: |
+          uvx copier copy --defaults --trust . /tmp/test-project-defaults
+          ls /tmp/test-project-defaults
+
+      - name: Verify project.godot exists
+        run: test -f /tmp/test-project-defaults/project.godot
+
+      - name: Verify no NetworkManager in project.godot
+        run: |
+          if grep -q "NetworkManager" /tmp/test-project-defaults/project.godot; then
+            echo "FAIL: NetworkManager found in project.godot with multiplayer=false"
+            exit 1
+          fi
+          echo "PASS: No NetworkManager with multiplayer=false"
+
+      - name: Verify scenes/main.tscn exists
+        run: test -f /tmp/test-project-defaults/scenes/main.tscn
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+
+      - name: Install gdtoolkit
+        run: pip install gdtoolkit
+
+      - name: Import generated project
+        run: godot --headless --import --path /tmp/test-project-defaults --quit 2>/dev/null || true
+
+      - name: Type check generated GDScript
+        run: |
+          cd /tmp/test-project-defaults
+          ./scripts/tools/check_types.sh godot
+
+      - name: Format check generated GDScript
+        run: |
+          cd /tmp/test-project-defaults
+          gdformat --check scenes/ scripts/ 2>/dev/null || true
+
+      - name: Lint generated GDScript
+        run: |
+          cd /tmp/test-project-defaults
+          gdlint scenes/ scripts/ 2>/dev/null || true
+
+  test-multiplayer:
+    name: Test (multiplayer=true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install copier
+        run: uv pip install --system copier>=9.0
+
+      - name: Generate project (multiplayer=true)
+        run: |
+          uvx copier copy --defaults --trust --data multiplayer=true . /tmp/test-project-mp
+          ls /tmp/test-project-mp
+
+      - name: Verify NetworkManager in project.godot
+        run: |
+          if ! grep -q "NetworkManager" /tmp/test-project-mp/project.godot; then
+            echo "FAIL: NetworkManager not found in project.godot with multiplayer=true"
+            exit 1
+          fi
+          echo "PASS: NetworkManager present with multiplayer=true"
+
+      - name: Verify CLAUDE.md multiplayer section
+        run: |
+          if ! grep -q "Multiplayer Patterns" /tmp/test-project-mp/CLAUDE.md; then
+            echo "FAIL: Multiplayer Patterns section missing from CLAUDE.md"
+            exit 1
+          fi
+          echo "PASS: Multiplayer Patterns section present"
+
+      - name: Verify setup_offline_multiplayer in test helper
+        run: |
+          if ! grep -q "setup_offline_multiplayer" /tmp/test-project-mp/tests_gdunit4/helpers/test_helper.gd; then
+            echo "FAIL: setup_offline_multiplayer not found in test_helper.gd"
+            exit 1
+          fi
+          echo "PASS: setup_offline_multiplayer present"
+
+      - name: Verify RPC section in gdscript-conventions
+        run: |
+          if ! grep -q "RPC Type Safety" /tmp/test-project-mp/docs/gdscript-conventions.md; then
+            echo "FAIL: RPC Type Safety section missing from gdscript-conventions.md"
+            exit 1
+          fi
+          echo "PASS: RPC section present"
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+
+      - name: Import generated project
+        run: godot --headless --import --path /tmp/test-project-mp --quit 2>/dev/null || true
+
+      - name: Type check generated GDScript
+        run: |
+          cd /tmp/test-project-mp
+          ./scripts/tools/check_types.sh godot

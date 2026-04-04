@@ -2,10 +2,7 @@ _subdirectory: template
 _exclude:
   - copier.yml
   - pyproject.toml
-  - ".github"
   - ".git"
-  - ".gitignore"
-  - ".gitattributes"
 
 project_name:
   type: str
