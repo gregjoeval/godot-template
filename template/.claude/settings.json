@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "Agent",
+      "WebSearch",
+      "WebFetch(*)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(rd *)",
+      "Bash(gdformat *)",
+      "Bash(gdlint *)",
+      "Bash(pip *)",
+      "Bash(pre-commit *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(mkdir *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(sort *)",
+      "Bash(diff *)",
+      "Bash(which *)",
+      "Bash(file *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(./scripts/tools/*)",
+      "Bash(godot *)",
+      "Bash(python *)",
+      "Bash(cf *)"
+    ],
+    "defaultMode": "dontAsk"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/plan-handoff.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
