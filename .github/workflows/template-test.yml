@@ -26,9 +26,6 @@ jobs:
         with:
           version: "latest"
 
-      - name: Install copier
-        run: uv pip install --system copier>=9.0
-
       - name: Generate project (defaults, multiplayer=false)
         run: |
           uvx copier copy --defaults --trust . /tmp/test-project-defaults
@@ -66,9 +63,6 @@ jobs:
           chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
           sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
 
-      - name: Install gdtoolkit
-        run: pip install gdtoolkit
-
       - name: Import generated project
         run: godot --headless --import --path /tmp/test-project-defaults --quit 2>/dev/null || true
 
@@ -80,12 +74,12 @@ jobs:
       - name: Format check generated GDScript
         run: |
           cd /tmp/test-project-defaults
-          gdformat --check scenes/ scripts/ 2>/dev/null || true
+          uvx --from gdtoolkit gdformat --check scenes/ scripts/ 2>/dev/null || true
 
       - name: Lint generated GDScript
         run: |
           cd /tmp/test-project-defaults
-          gdlint scenes/ scripts/ 2>/dev/null || true
+          uvx --from gdtoolkit gdlint scenes/ scripts/ 2>/dev/null || true
 
   test-multiplayer:
     name: Test (multiplayer=true)
@@ -98,9 +92,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
-
-      - name: Install copier
-        run: uv pip install --system copier>=9.0
 
       - name: Generate project (multiplayer=true)
         run: |
