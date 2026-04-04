@@ -84,6 +84,12 @@ Review changes for deeper structural correctness:
 **SOLID Spot Checks:**
 - Direct node path dependencies instead of signals/groups — flag as coupling violation
 - Large if/else chains that should be polymorphism — flag as Open/Closed violation
+- Deep inheritance chains instead of composition — flag if >2 levels of behavior inheritance
+
+**Principle Misapplication Check:**
+- Premature abstractions (shared function for code with different reasons to change) — flag as wrong DRY
+- Fragmented code that changes together split across many files — flag as over-applied SRP
+- See `docs/PRINCIPLES.md` for full trade-off guidance
 
 ### Scene File (.tscn) Review
 

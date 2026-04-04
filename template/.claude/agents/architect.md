@@ -88,6 +88,7 @@ Before creating issues, review your own plan:
 - **Regression risks?** Could this break existing behavior? What tests protect against that?
 - **Simpler alternatives?** Is there a way to achieve this with fewer changes?
 - **YAGNI violations?** Are you proposing infrastructure nobody asked for?
+- **Principle misapplication?** Premature abstractions, over-fragmented code, wrong DRY? (See `docs/PRINCIPLES.md`)
 
 Fix any issues found. Present the final plan to the user for approval.
 
