@@ -2,6 +2,7 @@ _subdirectory: template
 _exclude:
   - copier.yml
   - ".git"
+  - "{% if not multiplayer %}scripts/network{% endif %}"
 
 project_name:
   type: str
