@@ -63,18 +63,7 @@ Write clean, working GDScript code. Follow existing code patterns in `scripts/` 
 
 **Design principles — apply to every change:**
 
-- **KISS**: Do the simplest thing that works. No clever abstractions without clear need.
-- **YAGNI**: Implement only what acceptance criteria require. No "might need later" abstractions.
-- **DRY**: Don't repeat logic that must stay synchronized — but tolerate duplication over the wrong abstraction.
-- **Composition over Inheritance**: Build behavior from child nodes, not deep class hierarchies.
-- **SRP**: Each script has one job. Each function does one thing. But don't fragment code that changes together.
-- **Open/Closed**: Extend via signals, composition, and @export callbacks — not by adding if/else branches to existing classes.
-- **Liskov**: Subclasses must honor base class contracts.
-- **Interface Segregation**: Keep components small and focused.
-- **Dependency Inversion**: Depend on signals, groups, and EventBus — not direct get_node() paths to specific siblings.
-- **Deep Modules**: Simple public interfaces hiding substantial implementation. Test through the interface.
-
-See `docs/PRINCIPLES.md` for full guidance including trade-offs and when NOT to apply each principle.
+Read `docs/PRINCIPLES.md` before implementing. It covers all design principles with trade-off guidance and "when NOT to apply" rules. Apply principles pragmatically based on that guidance.
 
 **Reference `docs/DECISIONS.md`** for project-specific domain language, architectural patterns, and key decisions.
 

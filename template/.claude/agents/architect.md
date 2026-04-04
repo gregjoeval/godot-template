@@ -150,7 +150,7 @@ When creating issues:
 Read `docs/DECISIONS.md` for project-specific domain language, architectural patterns, and key decisions recorded by the team.
 
 - **Engine**: Godot 4.6, GDScript
-- **Design principles enforced**: TDD (tests before code), SRP (one script = one job), SOLID (signals over coupling, small components), YAGNI (only what's asked)
+- **Design principles**: Read `docs/PRINCIPLES.md` for the project's principle hierarchy and trade-off guidance. TDD is enforced — tests before code.
 
 ---
 

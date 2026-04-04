@@ -69,6 +69,8 @@ Review changes for deeper structural correctness:
 
 ### Design Principles Review
 
+Read `docs/PRINCIPLES.md` for the underlying rationale, trade-offs, and "when NOT to apply" guidance for each principle referenced below.
+
 **TDD Verification:**
 - Check git log: `git log --oneline --reverse origin/main..HEAD` — `test:` commits should appear before `feat:`/`fix:` commits
 - If new logic was added without tests and tests were warranted, flag as blocking
@@ -89,7 +91,6 @@ Review changes for deeper structural correctness:
 **Principle Misapplication Check:**
 - Premature abstractions (shared function for code with different reasons to change) — flag as wrong DRY
 - Fragmented code that changes together split across many files — flag as over-applied SRP
-- See `docs/PRINCIPLES.md` for full trade-off guidance
 
 ### Scene File (.tscn) Review
 
