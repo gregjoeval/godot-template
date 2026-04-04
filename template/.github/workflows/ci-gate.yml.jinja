@@ -1,0 +1,170 @@
+name: CI Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ "{{" }} github.ref {{ "}}" }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "{{ godot_version }}-stable"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      gdscript: ${{ "{{" }} steps.detect.outputs.gdscript {{ "}}" }}
+      scenes: ${{ "{{" }} steps.detect.outputs.scenes {{ "}}" }}
+      shaders: ${{ "{{" }} steps.detect.outputs.shaders {{ "}}" }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        run: |
+          if [ "${{ "{{" }} github.event_name {{ "}}" }}" = "pull_request" ]; then
+            BASE="${{ "{{" }} github.event.pull_request.base.sha {{ "}}" }}"
+          else
+            BASE="${{ "{{" }} github.event.before {{ "}}" }}"
+          fi
+          FILES=$(git diff --name-only "$BASE" HEAD)
+          echo "gdscript=false" >> "$GITHUB_OUTPUT"
+          echo "scenes=false" >> "$GITHUB_OUTPUT"
+          echo "shaders=false" >> "$GITHUB_OUTPUT"
+          if echo "$FILES" | grep -qE '\.(gd)$|^project\.godot$|^scripts/tools/check_types\.sh$|^\.github/workflows/ci-gate\.yml$'; then
+            echo "gdscript=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$FILES" | grep -qE '\.(tscn|tres)$|^project\.godot$|^scripts/tools/normalize_scenes\.sh$|^\.github/workflows/ci-gate\.yml$'; then
+            echo "scenes=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$FILES" | grep -qE '\.gdshader$|^scripts/tools/check_shaders\.sh$'; then
+            echo "shaders=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.gdscript == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install gdtoolkit
+        run: pip install gdtoolkit
+
+      - name: Check formatting
+        run: gdformat --check scripts/ tests_gdunit4/
+
+      - name: Run linter
+        run: gdlint scripts/ tests_gdunit4/
+
+  shader-lint:
+    needs: changes
+    if: needs.changes.outputs.shaders == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shader processor returns
+        run: ./scripts/tools/check_shaders.sh shaders/*.gdshader
+
+  godot-checks:
+    needs: changes
+    if: needs.changes.outputs.gdscript == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import --path . --quit 2>/dev/null || true
+
+      - name: Run GDScript type check
+        run: ./scripts/tools/check_types.sh godot
+
+      - name: Run smoke test
+        run: timeout 60 ./scripts/tools/smoke_test.sh godot
+
+      - name: Run gdUnit4 tests
+        run: ./scripts/tools/run_gdunit4_tests.sh
+
+  normalize-check:
+    needs: changes
+    if: needs.changes.outputs.scenes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+
+      - name: Normalize scene/resource files
+        run: ./scripts/tools/normalize_scenes.sh godot
+
+      - name: Check for unnormalized files
+        run: |
+          if ! git diff --exit-code -- '*.tscn' '*.tres' 'project.godot'; then
+            echo ""
+            echo "ERROR: Scene/resource files are not normalized."
+            echo "Run './scripts/tools/normalize_scenes.sh' locally and commit the changes."
+            exit 1
+          fi
+
+  uid-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check UID sidecar files
+        run: ./scripts/tools/check_uids.sh
+
+  gate:
+    needs: [lint, shader-lint, godot-checks, normalize-check, uid-check]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check results
+        run: |
+          results=("${{ "{{" }} needs.lint.result {{ "}}" }}" "${{ "{{" }} needs.shader-lint.result {{ "}}" }}" "${{ "{{" }} needs.godot-checks.result {{ "}}" }}" "${{ "{{" }} needs.normalize-check.result {{ "}}" }}" "${{ "{{" }} needs.uid-check.result {{ "}}" }}")
+          for r in "${results[@]}"; do
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              echo "FAILED: got '$r'"
+              exit 1
+            fi
+          done
+          echo "All checks passed."

@@ -1,0 +1,82 @@
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ "{{" }} github.workflow {{ "}}" }}-${{ "{{" }} github.ref {{ "}}" }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: "{{ godot_version }}-stable"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/godot
+            ~/.local/share/godot/export_templates/
+          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}-with-templates
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+
+      - name: Install export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q Godot_v${GODOT_VERSION}_export_templates.tpz
+          mv templates ~/.local/share/godot/export_templates/{{ godot_version }}.stable
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ "{{" }} github.ref {{ "}}" }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import project
+        run: godot --headless --import --path . --quit 2>/dev/null || true
+
+      - name: Build
+        run: ./scripts/tools/build.sh godot --version "${{ "{{" }} steps.version.outputs.version {{ "}}" }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-builds
+          retention-days: 30
+          path: |
+            {{ project_slug }}-*-linux-x86_64.zip
+            {{ project_slug }}-*-windows-x86_64.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            {{ project_slug }}-*-linux-x86_64.zip
+            {{ project_slug }}-*-windows-x86_64.zip
