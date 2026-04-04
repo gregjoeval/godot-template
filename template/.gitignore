@@ -1,0 +1,25 @@
+# Godot 4.x
+.godot/
+*.import
+.uid_cache
+
+# Export
+export/
+*.pck
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Copier
+.copier-answers.yml

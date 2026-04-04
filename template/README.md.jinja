@@ -1,0 +1,19 @@
+# {{ project_name }}
+
+A Godot {{ godot_version }} project.
+
+## Setup
+
+After cloning, activate the project's git hooks and install tooling:
+
+```sh
+git config core.hooksPath tools/hooks
+pip install gdtoolkit pre-commit commitizen
+pre-commit install
+```
+
+## Development
+
+See `docs/gdscript-conventions.md` for typing rules and toolchain pitfalls.
+
+See `CLAUDE.md` for agent workflow, quality gates, and conventions.
