@@ -1,0 +1,212 @@
+# Testing Conventions
+
+gdUnit4 test patterns and conventions for this project.
+
+## File Organization
+
+All automated tests live in `tests_gdunit4/`, discovered by the gdUnit4 CLI runner.
+
+```
+tests_gdunit4/
+  test_<module>.gd            # one file per module
+  helpers/
+    test_helper.gd            # shared utilities (GdUnitTestHelper class)
+  integration/
+    test_int_smoke.gd         # integration tests
+  manual/
+    test_<feature>.md         # manual test plans for visual/physics checks
+```
+
+- **Naming:** `test_<module>.gd` -- one test file per module or script under test
+- **Helpers:** shared setup utilities in `tests_gdunit4/helpers/test_helper.gd` (`GdUnitTestHelper` class)
+- **Integration:** multi-system tests in `tests_gdunit4/integration/`
+- **Manual plans:** markdown checklists in `tests_gdunit4/manual/` for things that cannot be automated
+
+## Test Structure
+
+Every test file follows this template:
+
+```gdscript
+extends GdUnitTestSuite
+
+var subject: MyComponent
+
+
+func before_test() -> void:
+    subject = auto_free(MyComponent.new())
+    add_child(subject)
+
+
+func test_initial_state() -> void:
+    assert_bool(subject.is_active()).is_false()
+
+
+func test_activate_changes_state() -> void:
+    subject.activate()
+    assert_bool(subject.is_active()).is_true()
+```
+
+Key points:
+
+- Extend `GdUnitTestSuite`, not `Node` or `SceneTree`
+- Use `before_test()` to create a fresh subject for every test
+- One assertion concept per test function (multiple asserts are fine if they test the same thing)
+- Two blank lines between functions (matches gdformat rules)
+
+## Naming Conventions
+
+### Test functions
+
+Prefix with `test_` and describe what is being tested:
+
+```gdscript
+func test_calculate_value_zero_items() -> void:
+func test_take_damage_emits_health_changed() -> void:
+func test_vector_to_dir_north() -> void:
+func test_pop_last_empty_returns_null() -> void:
+```
+
+### Regression tests
+
+Every bug fix **must** add a regression test named `test_regression_<description>`:
+
+```gdscript
+func test_regression_dead_player_skipped_in_find_target() -> void:
+    # Reproduces the bug before the fix
+    player.is_dead = true
+    var target := system._find_target()
+    assert_object(target).is_null()
+```
+
+This is the most important convention for preventing runtime errors from recurring.
+
+### Fixture variables
+
+No leading underscore on local variables (gdlint enforces this in gdUnit4 tests).
+Use descriptive names for instance variables shared across tests.
+
+### Helper methods
+
+Underscore prefix for private factory/setup methods within a test file:
+
+```gdscript
+func _make_component(val: int = 10) -> MyComponent:
+    var comp: MyComponent = auto_free(MyComponent.new())
+    add_child(comp)
+    comp.value = val
+    return comp
+```
+
+## Node Lifecycle
+
+### Preferred: `auto_free()` + `add_child()`
+
+`auto_free()` registers the node for automatic cleanup after the test, and `add_child()`
+adds it to the scene tree:
+
+```gdscript
+func before_test() -> void:
+    subject = auto_free(MyComponent.new())
+    add_child(subject)
+```
+
+**Important:** `auto_free()` returns `Variant`, not the original type. Always use an
+explicit type annotation on the receiving variable:
+
+```gdscript
+# GOOD -- explicit type preserves type safety
+var node: Node2D = auto_free(Node2D.new())
+add_child(node)
+
+# BAD -- loses type information
+var node := auto_free(Node2D.new())  # node is Variant
+```
+
+### Manual cleanup with `after_test()`
+
+Only use when `auto_free()` is not suitable:
+
+```gdscript
+func before_test() -> void:
+    world = build_world_shell()
+    add_child(world)
+
+func after_test() -> void:
+    if is_instance_valid(world):
+        world.queue_free()
+        world = null
+```
+
+## Autoload State
+
+Autoloads persist across tests. Reset them in `before_test()` or `after_test()`
+to prevent test pollution. Add reset methods to `GdUnitTestHelper` (in `tests_gdunit4/helpers/test_helper.gd`)
+as your project grows, rather than scattering reset logic across test files.
+
+## What to Test vs Not
+
+| Category | Test? | Example |
+|---|---|---|
+| Pure logic/calculations | Yes | `calculate_slowdown(weight)` |
+| State transitions | Yes | FSM state changes |
+| Signal emission | Yes | `health_changed` on damage |
+| Data classes | Yes | Typed data containers |
+| Component behavior | Yes | `take_damage()` |
+| Visual rendering | No | Sprite appearance, animations |
+| Physics feel | Manual | Collision response, knockback |
+| UI layout | Manual | HUD positioning, menu flow |
+| Multiplayer sync | Manual | RPC delivery across peers |
+
+## Signal Testing
+
+Use `monitor_signals()` to start recording, then assert with `await assert_signal()`:
+
+```gdscript
+func test_take_damage_emits_health_changed() -> void:
+    monitor_signals(health_comp)
+    health_comp.take_damage(10.0)
+    await assert_signal(health_comp).call("is_emitted", "health_changed", [90.0, 100.0])
+```
+
+### Signal assertion gotchas
+
+- **Always include expected args** in `is_emitted` when the signal has parameters
+- **Use `.call()` syntax** -- `assert_signal()` returns a dynamic object
+- **Autoload singletons** -- do NOT use `monitor_signals()` on autoload singletons. Use a manual signal connection instead.
+
+## Common Assertions
+
+| Assertion | Purpose | Example |
+|---|---|---|
+| `assert_int(val)` | Integer comparisons | `.is_equal(42)`, `.is_greater(0)` |
+| `assert_float(val)` | Float comparisons | `.is_equal(1.0)`, `.is_equal_approx(1.0, 0.01)` |
+| `assert_str(val)` | String comparisons | `.is_equal("stone")`, `.contains("error")` |
+| `assert_bool(val)` | Boolean checks | `.is_true()`, `.is_false()` |
+| `assert_object(val)` | Object/null checks | `.is_null()`, `.is_not_null()`, `.is_equal(obj)` |
+| `assert_array(val)` | Array checks | `.has_size(3)`, `.contains([item])` |
+| `assert_signal(obj)` | Signal assertions (await) | `.call("is_emitted", "sig", [args])` |
+
+## Running Tests
+
+### Command line (headless)
+
+```bash
+./scripts/tools/run_gdunit4_tests.sh
+```
+
+### Direct invocation
+
+```bash
+godot --headless --path . \
+    -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
+    -a "res://tests_gdunit4/" \
+    --ignoreHeadlessMode
+```
+
+### Pre-commit bypass
+
+The `gdtest` pre-commit hook runs tests on commit. To skip when godot is unavailable:
+
+```bash
+SKIP=gdtest git commit -m "your message"
+```
