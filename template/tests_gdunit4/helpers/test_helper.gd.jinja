@@ -1,0 +1,15 @@
+## Shared test utilities for this project.
+## Add project-specific setup/reset helpers here as your project grows.
+## See docs/testing-conventions.md for patterns and conventions.
+class_name GdUnitTestHelper
+extends Object
+{% if multiplayer %}
+
+
+## Sets up an OfflineMultiplayerPeer so that multiplayer.is_server() returns true
+## and multiplayer.get_unique_id() returns 1. Required for testing code guarded by
+## multiplayer.is_server() in unit tests.
+static func setup_offline_multiplayer(test_suite: Node) -> void:
+	var peer := OfflineMultiplayerPeer.new()
+	test_suite.get_tree().get_multiplayer().multiplayer_peer = peer
+{% endif %}
