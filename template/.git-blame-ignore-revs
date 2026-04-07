@@ -1,0 +1,7 @@
+# This file lists commits whose diffs should be ignored by `git blame`.
+# Configure with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Common candidates:
+# - Bulk formatting changes (CSharpier, gdformat)
+# - Mass renames or import reorganizations
+# - Automated tooling migrations

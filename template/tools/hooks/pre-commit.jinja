@@ -4,7 +4,11 @@
 # typecheck, normalization).
 # Godot 4.6 requires a .uid file for every .gd, .gdshader, and .gdextension file.
 
+{% if language == 'gdscript' %}
 staged_uid_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(gd|gdshader|gdextension)$' || true)
+{% else %}
+staged_uid_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(gdshader|gdextension)$' || true)
+{% endif %}
 
 # Capture originally-staged scene/resource files BEFORE pre-commit runs normalization
 originally_staged_scenes=$(git diff --cached --name-only -- '*.tscn' '*.tres' 'project.godot' 2>/dev/null || true)
@@ -35,7 +39,7 @@ if [ -n "$staged_uid_files" ]; then
         generated+=("$uid_file (created)")
     done <<< "$staged_uid_files"
 
-    if [ ${#generated[@]} -gt 0 ]; then
+    if [ {% raw %}${#generated[@]}{% endraw %} -gt 0 ]; then
         echo "pre-commit: auto-generated .uid sidecar files:"
         for f in "${generated[@]}"; do
             echo "  $f"

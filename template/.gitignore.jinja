@@ -1,0 +1,39 @@
+# Godot 4.x
+.godot/
+*.import
+.uid_cache
+
+# Export
+export/
+*.pck
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+{% if language == 'csharp' %}
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+{% endif %}
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Agent worktrees
+.claude/worktrees/
+.campfire/
+
+# GitHub App credentials (never commit)
+*.pem
+reviewer-app.env

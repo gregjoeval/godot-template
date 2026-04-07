@@ -13,13 +13,18 @@ config_version=5
 config/name="{{ project_name }}"
 config/version="0.1.0"
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("{{ godot_version }}")
+config/features=PackedStringArray("{{ godot_version }}"{% if language == 'csharp' %}, "C#"{% endif %})
 {% if multiplayer %}
 
 [autoload]
 
+{% if language == 'csharp' %}
+NetworkManager="*res://scripts/network/NetworkManager.cs"
+{% else %}
 NetworkManager="*res://scripts/network/network_manager.gd"
 {% endif %}
+{% endif %}
+{% if language == 'gdscript' %}
 
 [debug]
 
@@ -51,6 +56,13 @@ gdscript/warnings/redundant_await=2
 gdscript/warnings/missing_await=2
 gdscript/warnings/assert_always_true=2
 gdscript/warnings/integer_division=0
+{% endif %}
+{% if language == 'csharp' %}
+
+[dotnet]
+
+project/assembly_name="{{ project_pascal }}"
+{% endif %}
 
 [rendering]
 
