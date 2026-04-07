@@ -27,6 +27,8 @@ _exclude:
   - "{% if language == 'gdscript' %}docs/csharp-conventions.md{% endif %}"
   - "{% if language == 'gdscript' %}tests{% endif %}"
   - "{% if language == 'gdscript' %}scenes/Main.cs{% endif %}"
+  - "{% if language == 'gdscript' %}.config/dotnet-tools.json{% endif %}"
+  - "{% if language == 'gdscript' %}scripts/tools/setup-dev-env.sh{% endif %}"
   # Multiplayer + C# edge case
   - "{% if not multiplayer or language == 'gdscript' %}scripts/network/NetworkManager.cs{% endif %}"
 

@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Setup script for {{ project_pascal }} C# development environment
+# Works on: Ubuntu, Debian, WSL2, Windows (Git Bash / MINGW64)
+# Installs: .NET SDK 8.0, Godot .NET edition (via GodotEnv), NuGet packages, git hooks
+# No sudo required for .NET (installs to ~/.dotnet)
+
+# --- Platform detection ---
+case "$OSTYPE" in
+    msys*|mingw*|cygwin*)
+        PLATFORM="windows"
+        ;;
+    linux*)
+        PLATFORM="linux"
+        ;;
+    *)
+        echo "[ERROR] Unsupported platform: $OSTYPE"
+        echo "        This script supports Linux, WSL2, and Windows (Git Bash / MINGW64)."
+        exit 1
+        ;;
+esac
+
+# --- Prerequisite checks ---
+if ! command -v make &>/dev/null; then
+    echo "[ERROR] 'make' is required but not found."
+    if [ "$PLATFORM" = "windows" ]; then
+        echo "        Install it via Git Bash: pacman -S make"
+    else
+        echo "        Install it with: sudo apt-get install make"
+    fi
+    exit 1
+fi
+
+echo "=== {{ project_pascal }}: Dev Environment Setup ==="
+echo ""
+
+# --- .NET SDK ---
+if command -v dotnet &>/dev/null; then
+    echo "[OK] .NET SDK already installed: $(dotnet --version)"
+else
+    if [ "$PLATFORM" = "windows" ]; then
+        echo "[ERROR] .NET SDK not found."
+        echo "        Download and install it from: https://dotnet.microsoft.com/download"
+        echo "        Then re-run this script."
+        exit 1
+    fi
+
+    echo "[INSTALL] Installing .NET SDK 8.0 via dotnet-install script..."
+    curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+    chmod +x /tmp/dotnet-install.sh
+    /tmp/dotnet-install.sh --channel 8.0 --install-dir "$HOME/.dotnet"
+    rm /tmp/dotnet-install.sh
+
+    export DOTNET_ROOT="$HOME/.dotnet"
+    export PATH="$DOTNET_ROOT:$PATH"
+
+    # Persist to shell profile
+    SHELL_RC="$HOME/.bashrc"
+    if [ -n "${ZSH_VERSION:-}" ] || [[ "${SHELL:-}" == */zsh ]]; then
+        SHELL_RC="$HOME/.zshrc"
+    fi
+    if ! grep -q 'DOTNET_ROOT' "$SHELL_RC" 2>/dev/null; then
+        cat >> "$SHELL_RC" <<'DOTNETEOF'
+
+# .NET SDK (added by setup-dev-env.sh)
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$PATH"
+DOTNETEOF
+        echo "[NOTE] Added DOTNET_ROOT to $SHELL_RC — restart your shell or run: source $SHELL_RC"
+    fi
+    echo "[OK] .NET SDK installed: $(dotnet --version)"
+fi
+
+# --- Project setup via Makefile ---
+REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$REPO_DIR"
+echo ""
+echo "=== Project Setup ($(pwd)) ==="
+
+echo "[RUN] make setup (hooks, tools, Godot)..."
+make setup
+echo "[OK] make setup complete"
+
+# --- NuGet restore ---
+echo "[RUN] dotnet restore..."
+dotnet restore
+echo "[OK] NuGet packages restored"
+
+# --- Build ---
+echo "[RUN] dotnet build..."
+if dotnet build {{ project_pascal }}.sln --nologo -v quiet; then
+    echo "[OK] Build succeeded"
+else
+    echo "[WARN] Build failed — check errors above"
+fi
+
+# --- Format check ---
+echo "[RUN] CSharpier format check..."
+if dotnet csharpier check .; then
+    echo "[OK] Formatting is clean"
+else
+    echo "[NOTE] Formatting issues found — run 'dotnet csharpier .' to fix"
+fi
+
+echo ""
+echo "=== Setup Complete ==="
+echo ""
+
+# Check if dotnet/godot are reachable in the current shell
+NEEDS_RELOAD=false
+if ! command -v dotnet &>/dev/null; then
+    NEEDS_RELOAD=true
+fi
+if ! command -v godot &>/dev/null; then
+    NEEDS_RELOAD=true
+fi
+
+if [ "$NEEDS_RELOAD" = true ]; then
+    echo "[ACTION REQUIRED] New tools were installed but your shell doesn't see them yet."
+    echo "  Run this to reload your shell:"
+    echo ""
+    echo "    source ~/.bashrc"
+    echo ""
+fi
+
+echo "Next steps:"
+echo "  1. Open in Godot editor:  godot --editor --path ."
+echo "  2. IDE: Open {{ project_pascal }}.sln in Rider or VS Code"
+echo ""
+echo "Quick commands:"
+echo "  make build    # compile with warnings as errors"
+echo "  make test     # run all tests"
+echo "  make format   # check formatting with CSharpier"
