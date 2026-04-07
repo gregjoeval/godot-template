@@ -48,6 +48,10 @@ format:
 bump:
 	cz bump --changelog
 
+## Configure GitHub repo settings and branch protection (requires gh CLI + admin).
+setup-repo:
+	./scripts/tools/setup-repo.sh
+
 ## Set up development environment (requires .NET runtime and Python 3).
 setup:
 	git config core.hooksPath tools/hooks
