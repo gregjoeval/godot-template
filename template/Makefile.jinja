@@ -57,6 +57,9 @@ setup:
 	uv tool install pre-commit
 	uv tool install commitizen
 	pre-commit install
+{% if language == 'csharp' %}
+	dotnet tool restore
+{% endif %}
 	dotnet tool install --global Chickensoft.GodotEnv
 	godotenv godot install
 	godotenv godot use
