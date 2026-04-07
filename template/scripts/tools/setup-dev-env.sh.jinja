@@ -3,8 +3,11 @@ set -euo pipefail
 
 # Setup script for {{ project_pascal }} C# development environment
 # Works on: Ubuntu, Debian, WSL2, Windows (Git Bash / MINGW64)
-# Installs: .NET SDK 8.0, Godot .NET edition (via GodotEnv), NuGet packages, git hooks
+# Installs: .NET SDK, Godot .NET edition (via GodotEnv), NuGet packages, git hooks
 # No sudo required for .NET (installs to ~/.dotnet)
+
+# Keep in sync with ci-gate.yml's dotnet-version
+DOTNET_CHANNEL="8.0"
 
 # --- Platform detection ---
 case "$OSTYPE" in
@@ -46,10 +49,10 @@ else
         exit 1
     fi
 
-    echo "[INSTALL] Installing .NET SDK 8.0 via dotnet-install script..."
+    echo "[INSTALL] Installing .NET SDK ${DOTNET_CHANNEL} via dotnet-install script..."
     curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
     chmod +x /tmp/dotnet-install.sh
-    /tmp/dotnet-install.sh --channel 8.0 --install-dir "$HOME/.dotnet"
+    /tmp/dotnet-install.sh --channel "$DOTNET_CHANNEL" --install-dir "$HOME/.dotnet"
     rm /tmp/dotnet-install.sh
 
     export DOTNET_ROOT="$HOME/.dotnet"
