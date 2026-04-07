@@ -13,12 +13,10 @@ Key rules enforced by pre-commit:
 
 ## Setup
 
-After cloning, activate the project's git hooks and install tooling:
+After cloning, install tooling and download Godot:
 
 ```sh
-git config core.hooksPath tools/hooks
-pip install gdtoolkit pre-commit commitizen
-pre-commit install
+make setup
 gh extension install agynio/gh-pr-review
 ```
 

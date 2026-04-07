@@ -10,9 +10,6 @@ concurrency:
   group: ci-${{ "{{" }} github.ref {{ "}}" }}
   cancel-in-progress: true
 
-env:
-  GODOT_VERSION: "{{ godot_version }}-stable"
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -81,20 +78,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
         with:
-          path: /usr/local/bin/godot
-          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}
-
-      - name: Install Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
-          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
-          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+          version: {{ godot_version }}.0
+          use-dotnet: false
 
       - name: Import project
         run: godot --headless --import --path . --quit 2>/dev/null || true
@@ -116,20 +104,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
         with:
-          path: /usr/local/bin/godot
-          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}
-
-      - name: Install Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
-          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
-          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+          version: {{ godot_version }}.0
+          use-dotnet: false
 
       - name: Normalize scene/resource files
         run: ./scripts/tools/normalize_scenes.sh godot

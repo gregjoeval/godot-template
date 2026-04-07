@@ -22,5 +22,5 @@ multiplayer:
 godot_version:
   type: str
   default: "4.6"
-  help: "Godot version string (must be 4.x, e.g. 4.6)"
-  validator: "{% if not godot_version | regex_search('^4\\.') %}Must be a 4.x version string (e.g. 4.6, 4.3){% endif %}"
+  help: "Godot major.minor version (e.g. 4.6, 4.3 — do not include patch)"
+  validator: "{% if not godot_version | regex_search('^4\\.\\d+$') %}Must be 4.x format without patch (e.g. 4.6, 4.3){% endif %}"

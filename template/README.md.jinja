@@ -2,15 +2,22 @@
 
 A Godot {{ godot_version }} project.
 
+## Prerequisites
+
+- [.NET runtime](https://dotnet.microsoft.com/download) (for GodotEnv)
+- [Python 3](https://www.python.org/downloads/) + [uv](https://docs.astral.sh/uv/)
+
 ## Setup
 
-After cloning, activate the project's git hooks and install tooling:
+After cloning, run the setup target to install tooling, configure git hooks, and download Godot:
 
 ```sh
-git config core.hooksPath tools/hooks
-pip install gdtoolkit pre-commit commitizen
-pre-commit install
+make setup
 ```
+
+This installs GDScript tooling (gdtoolkit, pre-commit, commitizen) via uv, then uses
+[GodotEnv](https://github.com/chickensoft-collective/GodotEnv) to download and activate
+the correct Godot version (pinned in `.godotrc`).
 
 ## Development
 

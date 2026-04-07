@@ -12,9 +12,6 @@ concurrency:
 permissions:
   contents: write
 
-env:
-  GODOT_VERSION: "{{ godot_version }}-stable"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,30 +21,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
         with:
-          path: |
-            /usr/local/bin/godot
-            ~/.local/share/godot/export_templates/
-          key: godot-${{ "{{" }} env.GODOT_VERSION {{ "}}" }}-with-templates
-
-      - name: Install Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
-          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
-          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
-
-      - name: Install export templates
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.local/share/godot/export_templates/
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
-          unzip -q Godot_v${GODOT_VERSION}_export_templates.tpz
-          mv templates ~/.local/share/godot/export_templates/{{ godot_version }}.stable
+          version: {{ godot_version }}.0
+          use-dotnet: false
+          include-templates: true
 
       - name: Determine version
         id: version
