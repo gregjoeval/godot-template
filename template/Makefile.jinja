@@ -1,3 +1,4 @@
+{% if language == 'gdscript' %}
 GODOT ?= godot
 GDUNIT4_SCRIPT := addons/gdUnit4/bin/GdUnitCmdTool.gd
 
@@ -24,6 +25,24 @@ lint:
 ## Static analysis check (gdtoolkit format check).
 check:
 	gdformat --check scripts/ tests_gdunit4/
+{% endif %}
+{% if language == 'csharp' %}
+SOLUTION := {{ project_pascal }}.sln
+
+.PHONY: test build format bump setup
+
+## Run all gdUnit4Net tests.
+test:
+	dotnet test $(SOLUTION)
+
+## Build with warnings as errors.
+build:
+	dotnet build $(SOLUTION) -warnaserror
+
+## Check formatting with CSharpier.
+format:
+	dotnet csharpier check .
+{% endif %}
 
 ## Bump version using conventional commits and generate changelog.
 bump:
@@ -32,7 +51,9 @@ bump:
 ## Set up development environment (requires .NET runtime and Python 3).
 setup:
 	git config core.hooksPath tools/hooks
+{% if language == 'gdscript' %}
 	uv tool install gdtoolkit
+{% endif %}
 	uv tool install pre-commit
 	uv tool install commitizen
 	pre-commit install

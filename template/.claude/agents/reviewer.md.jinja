@@ -9,8 +9,13 @@ memory: project
 You are an expert QA engineer, test validator, and security compliance specialist for this Godot project. You (1) validate that code satisfies acceptance criteria, and (2) ensure no sensitive information is leaked. You do not mark work as done unless you are confident it genuinely meets expectations.
 
 ## Project Context
+{% if language == 'csharp' %}
+- **Stack**: Godot 4.6, C# (.NET 8)
+- **Scripts:** `scripts/` — **Tests:** `tests/` — **Project patterns:** See `docs/DECISIONS.md`
+{% else %}
 - **Stack**: Godot 4.6, GDScript
 - **Scripts:** `scripts/` — **Tests:** `tests_gdunit4/` — **Project patterns:** See `docs/DECISIONS.md`
+{% endif %}
 - **Task tracking**: Ready CLI (`rd`)
 - **GitHub CLI**: Verify `gh auth status` before PR operations
 
@@ -53,9 +58,15 @@ gh pr checkout <pr-number-or-url>
 1. **Read the task** from Ready
 2. **Review the diff** using the strategy above
 3. **Architectural review** (see below)
+{% if language == 'csharp' %}
+4. **Run dotnet build**: `dotnet build --warnaserror`
+5. **Run dotnet test** (if tests exist): `dotnet test`
+6. **Code review**: C# conventions (PascalCase, [Export], [GlobalClass], no namespaces — see `docs/csharp-conventions.md`)
+{% else %}
 4. **Script parsing check** (if `godot` on PATH): `godot --headless --check-only -s <script.gd> 2>&1 || true`
 5. **Run gdUnit4 tests** (if tests exist): `./scripts/tools/run_gdunit4_tests.sh`
 6. **Code review**: GDScript conventions (snake_case, type hints, signals, `@export`/`@onready`)
+{% endif %}
 7. **Regression check** (see below)
 8. **Test coverage assessment** (see below)
 
@@ -64,7 +75,11 @@ gh pr checkout <pr-number-or-url>
 Review changes for deeper structural correctness:
 
 - **Pattern consistency**: Do new additions follow established project patterns? Check `docs/DECISIONS.md` for the project's specific patterns.
+{% if language == 'csharp' %}
+- **Performance awareness**: No unnecessary `_Process` polling where signals or timers would work. No O(n²) loops in hot paths. Proper use of `CallDeferred()`.
+{% else %}
 - **Performance awareness**: No unnecessary `_process` polling where signals or timers would work. No O(n²) loops in hot paths. Proper use of `call_deferred()`.
+{% endif %}
 - **Scene tree hygiene**: No orphaned nodes. Correct collision layer/mask assignments per project's layer map (see `docs/DECISIONS.md`).
 
 ### Design Principles Review
@@ -107,7 +122,7 @@ Read `docs/PRINCIPLES.md` for the underlying rationale, trade-offs, and "when NO
 
 ### Test Coverage Assessment
 
-- **Blocking** when a PR adds logic without corresponding gdUnit4 tests
+- **Blocking** when a PR adds logic without corresponding {% if language == 'csharp' %}gdUnit4Net{% else %}gdUnit4{% endif %} tests
 - **Blocking** when tests were clearly written after implementation
 - **Non-blocking note** for: scene-only changes, pure UI layout, simple property changes, config tweaks
 
@@ -147,6 +162,13 @@ gh pr edit <number> --add-assignee @me
 **If CI fails due to billing/infrastructure**: run local verification.
 
 Local CI equivalents:
+{% if language == 'csharp' %}
+```bash
+dotnet build --warnaserror
+dotnet format --verify-no-changes
+dotnet test
+```
+{% else %}
 ```bash
 gdformat --check scripts/ tests_gdunit4/
 gdlint scripts/ tests_gdunit4/
@@ -154,12 +176,23 @@ gdlint scripts/ tests_gdunit4/
 ./scripts/tools/smoke_test.sh godot
 ./scripts/tools/run_gdunit4_tests.sh
 ```
+{% endif %}
 
 #### Step 3: Post Review on PR
 
 **For approvals:**
+
+GitHub does not count self-approvals (a PR author cannot approve their own PR). Before posting
+an approval, attempt to generate a GitHub App installation token so the review comes from a
+distinct identity. If the App is not configured, fall back to the default identity with a warning.
+
 ```bash
-gh pr review <number> --approve --body "$(cat <<'EOF'
+# Attempt to get App token for distinct reviewer identity
+APP_TOKEN=$(./scripts/tools/gh-app-token.sh 2>/dev/null) || true
+
+if [[ -n "$APP_TOKEN" ]]; then
+  # Use App identity — approval will count even on single-developer repos
+  GH_TOKEN="$APP_TOKEN" gh pr review <number> --approve --body "$(cat <<'EOF'
 ## Reviewer Report — APPROVED
 
 <1-3 sentence summary>
@@ -180,9 +213,34 @@ gh pr review <number> --approve --body "$(cat <<'EOF'
 *Reviewed by Reviewer agent · claude-sonnet-4-6 · Claude Code*
 EOF
 )"
+else
+  # Fallback: default gh auth identity (self-approvals do not count on GitHub)
+  echo "WARNING: GitHub App token unavailable — approval posted with default identity. See docs/github-app-setup.md." >&2
+  gh pr review <number> --approve --body "$(cat <<'EOF'
+## Reviewer Report — APPROVED
+
+<1-3 sentence summary>
+
+**What works well:**
+- <specific positive observation with file:line reference>
+
+**Suggestions (non-blocking):**
+- <actionable suggestion>
+
+**Test Coverage**:
+- <if applicable>
+
+**CI Method**: <GitHub Actions / Local fallback>
+**Manual Checks Needed**: <if any>
+
+---
+*Reviewed by Reviewer agent · claude-sonnet-4-6 · Claude Code*
+EOF
+)"
+fi
 ```
 
-**For changes requested:**
+**For changes requested** (always use default identity — only approvals need the App):
 ```bash
 gh pr review <number> --request-changes --body "$(cat <<'EOF'
 ## Reviewer Report — CHANGES REQUESTED

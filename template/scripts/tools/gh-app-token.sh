@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# gh-app-token.sh — Generate a GitHub App installation access token
+#
+# Reads credentials from ~/.config/godot-reviewer-app/app-credentials.json and outputs
+# a fresh installation token to stdout. The token can be used as GH_TOKEN for gh CLI
+# calls that require a distinct identity (e.g., approving PRs without self-approval).
+#
+# Depends on: jq, openssl
+# Usage: token=$(./scripts/tools/gh-app-token.sh)
+set -euo pipefail
+
+CREDENTIALS_FILE="${HOME}/.config/godot-reviewer-app/app-credentials.json"
+
+# --- Validate credentials file exists ---
+if [[ ! -f "${CREDENTIALS_FILE}" ]]; then
+  echo "ERROR: Credentials file not found: ${CREDENTIALS_FILE}" >&2
+  echo "See docs/github-app-setup.md for setup instructions." >&2
+  exit 1
+fi
+
+# --- Parse credentials ---
+APP_ID=$(jq -r '.app_id' "${CREDENTIALS_FILE}")
+PRIVATE_KEY_PATH=$(jq -r '.private_key_path' "${CREDENTIALS_FILE}")
+INSTALLATION_ID=$(jq -r '.installation_id' "${CREDENTIALS_FILE}")
+
+if [[ -z "${APP_ID}" || "${APP_ID}" == "null" ]]; then
+  echo "ERROR: app_id missing or null in ${CREDENTIALS_FILE}" >&2
+  exit 1
+fi
+
+if [[ -z "${INSTALLATION_ID}" || "${INSTALLATION_ID}" == "null" ]]; then
+  echo "ERROR: installation_id missing or null in ${CREDENTIALS_FILE}" >&2
+  exit 1
+fi
+
+# --- Validate private key file exists ---
+if [[ -z "${PRIVATE_KEY_PATH}" || "${PRIVATE_KEY_PATH}" == "null" ]]; then
+  echo "ERROR: private_key_path missing or null in ${CREDENTIALS_FILE}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${PRIVATE_KEY_PATH}" ]]; then
+  echo "ERROR: Private key file not found: ${PRIVATE_KEY_PATH}" >&2
+  echo "Ensure the path in ${CREDENTIALS_FILE} is correct." >&2
+  exit 1
+fi
+
+# --- Build JWT ---
+# JWT claims: iss=app_id, iat=now-60 (clock skew), exp=now+600 (10 min max)
+NOW=$(date +%s)
+IAT=$((NOW - 60))
+EXP=$((NOW + 600))
+
+# Base64url encoding helper (no padding, URL-safe chars)
+b64url() {
+  openssl enc -base64 -A | tr '+/' '-_' | tr -d '='
+}
+
+HEADER=$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)
+PAYLOAD=$(printf '{"iss":"%s","iat":%d,"exp":%d}' "${APP_ID}" "${IAT}" "${EXP}" | b64url)
+
+SIGNING_INPUT="${HEADER}.${PAYLOAD}"
+SIGNATURE=$(printf '%s' "${SIGNING_INPUT}" \
+  | openssl dgst -sha256 -sign "${PRIVATE_KEY_PATH}" \
+  | b64url)
+
+JWT="${SIGNING_INPUT}.${SIGNATURE}"
+
+# --- Exchange JWT for installation access token ---
+RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer ${JWT}" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/app/installations/${INSTALLATION_ID}/access_tokens")
+
+TOKEN=$(printf '%s' "${RESPONSE}" | jq -r '.token // empty')
+
+if [[ -z "${TOKEN}" ]]; then
+  echo "ERROR: Failed to obtain installation access token." >&2
+  ERROR_MSG=$(printf '%s' "${RESPONSE}" | jq -r '.message // "unknown error"')
+  echo "GitHub API response: ${ERROR_MSG}" >&2
+  exit 1
+fi
+
+# Output ONLY the token to stdout (no trailing newline issues from printf)
+printf '%s\n' "${TOKEN}"

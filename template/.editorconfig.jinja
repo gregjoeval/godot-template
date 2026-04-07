@@ -1,0 +1,80 @@
+root = true
+
+[*]
+indent_style = tab
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 100
+{% if language == 'csharp' %}
+
+[*.cs]
+indent_style = tab
+indent_size = 4
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+dotnet_sort_system_directives_first = true
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+
+# === Analyzer enforcement ===
+# CSharpier owns formatting — disable IDE formatting rule to avoid conflicts
+dotnet_diagnostic.IDE0055.severity = none
+
+# === Godot-specific suppressions ===
+# No namespaces used (flat global classes) — deliberate architecture decision
+dotnet_diagnostic.CA1050.severity = none
+dotnet_diagnostic.MA0047.severity = none
+dotnet_diagnostic.IDE0160.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.RCS1110.severity = none
+
+# Godot requires partial (non-sealed, non-static) classes for codegen
+dotnet_diagnostic.MA0053.severity = none
+dotnet_diagnostic.MA0076.severity = none
+dotnet_diagnostic.MA0048.severity = none
+
+# Godot Resource mutable collections are List<T> by convention
+dotnet_diagnostic.MA0016.severity = none
+
+# Method length limit — suppress for complex single-responsibility algorithms
+dotnet_diagnostic.MA0051.severity = none
+
+# Godot string methods don't accept StringComparison
+dotnet_diagnostic.MA0001.severity = none
+dotnet_diagnostic.MA0006.severity = none
+
+# Primary constructor not relevant for Godot Node/Resource classes
+dotnet_diagnostic.IDE0290.severity = none
+
+# Collection expression suggestions — prefer explicit new() for Godot Resources
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_diagnostic.IDE0301.severity = none
+dotnet_diagnostic.IDE0302.severity = none
+dotnet_diagnostic.IDE0303.severity = none
+dotnet_diagnostic.IDE0304.severity = none
+dotnet_diagnostic.IDE0305.severity = none
+
+[tests/**/*.cs]
+# gdUnit4Net test methods are invoked via reflection and must be instance methods
+dotnet_diagnostic.CA1822.severity = none
+
+# gdUnit4Net manages test class lifecycle — Resource/GodotObject fields are cleaned up by framework
+dotnet_diagnostic.CA1001.severity = none
+
+# Static readonly arrays in tests add noise for one-off test data
+dotnet_diagnostic.CA1861.severity = none
+{% endif %}

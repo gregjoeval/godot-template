@@ -1,7 +1,8 @@
 # CLAUDE.md — {{ project_name }}
 
 ## Tech Stack
-- Godot {{ godot_version }}, GDScript
+- Godot {{ godot_version }}, {% if language == 'csharp' %}C# (.NET 8){% else %}GDScript{% endif %}
+{% if language == 'gdscript' %}
 
 ## GDScript Conventions
 
@@ -10,6 +11,19 @@ Key rules enforced by pre-commit:
 - No nested generics (`Array[Dict[K,V]]`) — gdtoolkit parser limitation
 - No `@warning_ignore` annotations (pre-commit enforced) — use typed data classes, ConfigHelper, NodeCast
 - 100-char line limit (gdformat)
+{% endif %}
+{% if language == 'csharp' %}
+
+## C# Conventions
+
+See `docs/csharp-conventions.md` for typing rules, Godot C# patterns, and analyzer config.
+Key rules enforced by build + pre-commit:
+- `TreatWarningsAsErrors` — all Roslyn warnings are build errors
+- Nullable reference types enabled
+- CSharpier formatting (100-char print width)
+- Roslyn analyzers: Meziantou.Analyzer + Roslynator.Analyzers
+- No namespaces (flat global classes matching GDScript `class_name` pattern)
+{% endif %}
 
 ## Setup
 
@@ -194,6 +208,7 @@ or destructive commands (`rm -rf`, `curl`, `sudo`, etc.) trigger a user confirma
 - **Per-agent scoping** is not supported by the platform; behavioral guardrails in agent prompts are the primary enforcement layer
 - Read/Write/Edit/Glob/Grep/Agent are auto-allowed (`defaultMode: dontAsk`)
 
+{% if language == 'gdscript' %}
 ## Pre-commit: GDScript Type Check
 
 `scripts/tools/check_types.sh` runs Godot headless to validate all GDScript files. It **requires**
@@ -205,6 +220,16 @@ SKIP=gdtypecheck git commit ...
 
 **Important**: `.claude/.gdignore` must exist and must not be removed. It prevents Godot from
 scanning agent worktree directories during the type check, which would cause false errors.
+{% endif %}
+{% if language == 'csharp' %}
+## Pre-commit: C# Build Check
+
+Pre-commit runs `dotnet build --warnaserror` to validate all C# files. To bypass:
+
+```sh
+SKIP=dotnet-build git commit ...
+```
+{% endif %}
 
 ## TDD Workflow (MANDATORY for agents)
 
@@ -223,11 +248,20 @@ This is the #1 rule for stopping recurring runtime errors.
 Reviewer agents verify test-first commit ordering and block PRs missing tests for logic changes.
 
 See `docs/testing-conventions.md` for test structure, naming, and patterns.
+{% if language == 'gdscript' %}
 
 ### Pre-commit test runner
 
 `scripts/tools/run_gdunit4_tests.sh` runs gdUnit4 tests headlessly on every commit (when `godot` is available).
 Bypass: `SKIP=gdtest git commit ...` (or `SKIP=gdtypecheck,gdtest` to skip both godot hooks).
+{% endif %}
+{% if language == 'csharp' %}
+
+### Pre-commit test runner
+
+`dotnet test` runs gdUnit4Net tests on every commit.
+Bypass: `SKIP=dotnet-test git commit ...` (or `SKIP=dotnet-build,dotnet-test` to skip both).
+{% endif %}
 
 ## Project Architecture
 
@@ -239,11 +273,16 @@ Update this file as the project evolves — agents reference it for project-spec
 This project uses Godot's high-level multiplayer API with server-authoritative architecture.
 
 - **Transport**: `ENetMultiplayerPeer` for networked play, `OfflineMultiplayerPeer` for singleplayer
+{% if language == 'csharp' %}
+- **Authority**: Server (`Multiplayer.IsServer()`) owns game state. Clients request actions via RPC.
+- **Testing**: Use `TestHelper.SetupOfflineMultiplayer(this)` to make `Multiplayer.IsServer()` return `true` in tests
+{% else %}
 - **Authority**: Server (`multiplayer.is_server()`) owns game state. Clients request actions via RPC.
 - **RPC conventions**:
   - `@rpc("any_peer")` — client → server requests (server validates and acts)
   - `@rpc("authority", "call_local")` — server → all clients broadcasts (including server itself)
 - **Testing**: Use `GdUnitTestHelper.setup_offline_multiplayer(self)` to make `multiplayer.is_server()` return `true` in tests
+{% endif %}
 
 See `docs/DECISIONS.md` for project-specific multiplayer decisions (NetworkManager structure, sync properties, etc.).
 {% endif %}

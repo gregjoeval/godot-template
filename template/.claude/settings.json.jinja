@@ -12,9 +12,13 @@
       "Bash(git *)",
       "Bash(gh *)",
       "Bash(rd *)",
+{% if language == 'gdscript' %}
       "Bash(gdformat *)",
       "Bash(gdlint *)",
-      "Bash(pip *)",
+{% endif %}
+{% if language == 'csharp' %}
+      "Bash(dotnet *)",
+{% endif %}
       "Bash(pre-commit *)",
       "Bash(ls *)",
       "Bash(cat *)",

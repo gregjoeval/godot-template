@@ -15,7 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
+{% if language == 'gdscript' %}
       gdscript: ${{ "{{" }} steps.detect.outputs.gdscript {{ "}}" }}
+{% endif %}
+{% if language == 'csharp' %}
+      csharp: ${{ "{{" }} steps.detect.outputs.csharp {{ "}}" }}
+{% endif %}
       scenes: ${{ "{{" }} steps.detect.outputs.scenes {{ "}}" }}
       shaders: ${{ "{{" }} steps.detect.outputs.shaders {{ "}}" }}
     steps:
@@ -30,18 +35,31 @@ jobs:
             BASE="${{ "{{" }} github.event.before {{ "}}" }}"
           fi
           FILES=$(git diff --name-only "$BASE" HEAD)
+{% if language == 'gdscript' %}
           echo "gdscript=false" >> "$GITHUB_OUTPUT"
+{% endif %}
+{% if language == 'csharp' %}
+          echo "csharp=false" >> "$GITHUB_OUTPUT"
+{% endif %}
           echo "scenes=false" >> "$GITHUB_OUTPUT"
           echo "shaders=false" >> "$GITHUB_OUTPUT"
+{% if language == 'gdscript' %}
           if echo "$FILES" | grep -qE '\.(gd)$|^project\.godot$|^scripts/tools/check_types\.sh$|^\.github/workflows/ci-gate\.yml$'; then
             echo "gdscript=true" >> "$GITHUB_OUTPUT"
           fi
+{% endif %}
+{% if language == 'csharp' %}
+          if echo "$FILES" | grep -qE '\.(cs|csproj|sln)$|\.editorconfig$|^\.github/workflows/ci-gate\.yml$'; then
+            echo "csharp=true" >> "$GITHUB_OUTPUT"
+          fi
+{% endif %}
           if echo "$FILES" | grep -qE '\.(tscn|tres)$|^project\.godot$|^scripts/tools/normalize_scenes\.sh$|^\.github/workflows/ci-gate\.yml$'; then
             echo "scenes=true" >> "$GITHUB_OUTPUT"
           fi
           if echo "$FILES" | grep -qE '\.gdshader$|^scripts/tools/check_shaders\.sh$'; then
             echo "shaders=true" >> "$GITHUB_OUTPUT"
           fi
+{% if language == 'gdscript' %}
 
   lint:
     needs: changes
@@ -51,24 +69,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install gdtoolkit
-        run: pip install gdtoolkit
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
 
       - name: Check formatting
-        run: gdformat --check scripts/ tests_gdunit4/
+        run: uvx --from gdtoolkit gdformat --check scripts/ tests_gdunit4/
 
       - name: Run linter
-        run: gdlint scripts/ tests_gdunit4/
-
-  shader-lint:
-    needs: changes
-    if: needs.changes.outputs.shaders == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check shader processor returns
-        run: ./scripts/tools/check_shaders.sh shaders/*.gdshader
+        run: uvx --from gdtoolkit gdlint scripts/ tests_gdunit4/
 
   godot-checks:
     needs: changes
@@ -95,6 +105,50 @@ jobs:
 
       - name: Run gdUnit4 tests
         run: ./scripts/tools/run_gdunit4_tests.sh
+{% endif %}
+{% if language == 'csharp' %}
+
+  dotnet-build:
+    needs: changes
+    if: needs.changes.outputs.csharp == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Godot .NET
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: {{ godot_version }}.0
+          use-dotnet: true
+
+      - name: Restore
+        run: dotnet restore {{ project_pascal }}.sln
+
+      - name: Build
+        run: dotnet build {{ project_pascal }}.sln --no-restore -warnaserror
+
+      - name: Format check
+        run: dotnet format {{ project_pascal }}.sln --verify-no-changes --no-restore
+
+      - name: Test
+        run: dotnet test {{ project_pascal }}.sln --no-build
+{% endif %}
+
+  shader-lint:
+    needs: changes
+    if: needs.changes.outputs.shaders == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shader processor returns
+        run: ./scripts/tools/check_shaders.sh shaders/*.gdshader
 
   normalize-check:
     needs: changes
@@ -103,12 +157,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+{% if language == 'csharp' %}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+{% endif %}
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
           version: {{ godot_version }}.0
-          use-dotnet: false
+          use-dotnet: {% if language == 'csharp' %}true{% else %}false{% endif %}
 
       - name: Normalize scene/resource files
         run: ./scripts/tools/normalize_scenes.sh godot
@@ -132,14 +193,19 @@ jobs:
         run: ./scripts/tools/check_uids.sh
 
   gate:
-    needs: [lint, shader-lint, godot-checks, normalize-check, uid-check]
+    needs: [{% if language == 'gdscript' %}lint, godot-checks, {% endif %}{% if language == 'csharp' %}dotnet-build, {% endif %}shader-lint, normalize-check, uid-check]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
       - name: Check results
         run: |
-          results=("${{ "{{" }} needs.lint.result {{ "}}" }}" "${{ "{{" }} needs.shader-lint.result {{ "}}" }}" "${{ "{{" }} needs.godot-checks.result {{ "}}" }}" "${{ "{{" }} needs.normalize-check.result {{ "}}" }}" "${{ "{{" }} needs.uid-check.result {{ "}}" }}")
+{% if language == 'gdscript' %}
+          results=("${{ "{{" }} needs.lint.result {{ "}}" }}" "${{ "{{" }} needs.godot-checks.result {{ "}}" }}" "${{ "{{" }} needs.shader-lint.result {{ "}}" }}" "${{ "{{" }} needs.normalize-check.result {{ "}}" }}" "${{ "{{" }} needs.uid-check.result {{ "}}" }}")
+{% endif %}
+{% if language == 'csharp' %}
+          results=("${{ "{{" }} needs.dotnet-build.result {{ "}}" }}" "${{ "{{" }} needs.shader-lint.result {{ "}}" }}" "${{ "{{" }} needs.normalize-check.result {{ "}}" }}" "${{ "{{" }} needs.uid-check.result {{ "}}" }}")
+{% endif %}
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "FAILED: got '$r'"
