@@ -28,7 +28,7 @@ command -v jq &>/dev/null || MISSING+=("jq")
 command -v openssl &>/dev/null || MISSING+=("openssl")
 command -v curl &>/dev/null || MISSING+=("curl")
 
-if [[ ${#MISSING[@]} -gt 0 ]]; then
+if [[ {% raw %}${#MISSING[@]}{% endraw %} -gt 0 ]]; then
   echo "[ERROR] Missing required tools: ${MISSING[*]}"
   echo "        Install them before running this script."
   exit 1
@@ -109,7 +109,7 @@ echo ""
 echo "[RUN] Verifying setup by generating a test token..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if TOKEN=$("${SCRIPT_DIR}/gh-app-token.sh" 2>&1); then
-  echo "[OK] Token generated successfully (${#TOKEN} chars)"
+  echo "[OK] Token generated successfully ({% raw %}${#TOKEN}{% endraw %} chars)"
 else
   echo "[ERROR] Token generation failed:"
   echo "        ${TOKEN}"
