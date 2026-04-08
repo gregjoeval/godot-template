@@ -47,7 +47,7 @@ if command -v pre-commit &>/dev/null; then
     pre-commit run --hook-stage pre-commit || exit $?
 else
     echo "pre-commit: WARNING — 'pre-commit' not installed; skipping validation"
-    echo "pre-commit: Run 'pip install pre-commit && pre-commit install' to enable validation"
+    echo "pre-commit: Run 'make setup' to enable validation"
 fi
 
 # Re-stage only originally-staged scene/resource files that were modified by normalization

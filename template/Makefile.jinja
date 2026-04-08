@@ -33,7 +33,6 @@ setup:
 	git config core.hooksPath tools/hooks
 	uv tool install pre-commit
 	uv tool install commitizen
-	pre-commit install
 	dotnet tool restore
 	dotnet tool install --global Chickensoft.GodotEnv
 	godotenv godot install
