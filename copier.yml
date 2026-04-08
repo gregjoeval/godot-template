@@ -28,5 +28,5 @@ godot_version:
 
 reviewer_github_app_name:
   type: str
-  default: ""
+  default: "gjv-ai-reviewer"
   help: "GitHub App name for reviewer identity (e.g. my-project-reviewer). Leave empty to skip GitHub App setup."
