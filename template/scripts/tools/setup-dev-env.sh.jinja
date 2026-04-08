@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Setup script for {{ project_pascal }} C# development environment
 # Works on: Ubuntu, Debian, WSL2, Windows (Git Bash / MINGW64)
-# Installs: .NET SDK, Godot .NET edition (via GodotEnv), NuGet packages, git hooks
+# Installs: Python 3, uv, .NET SDK, Godot .NET edition (via GodotEnv), NuGet packages, git hooks
 # No sudo required for .NET (installs to ~/.dotnet)
 
 # Keep in sync with ci-gate.yml's dotnet-version
@@ -37,6 +37,41 @@ fi
 
 echo "=== {{ project_pascal }}: Dev Environment Setup ==="
 echo ""
+
+# --- Python 3 ---
+if command -v python3 &>/dev/null; then
+    echo "[OK] Python 3 already installed: $(python3 --version)"
+else
+    if [ "$PLATFORM" = "windows" ]; then
+        echo "[ERROR] Python 3 not found."
+        echo "        Download and install it from: https://www.python.org/downloads/"
+        echo "        Then re-run this script."
+        exit 1
+    fi
+
+    echo "[ERROR] Python 3 not found."
+    echo "        Install it with: sudo apt-get install python3"
+    exit 1
+fi
+
+# --- uv (Python package manager) ---
+if command -v uv &>/dev/null; then
+    echo "[OK] uv already installed: $(uv --version)"
+else
+    echo "[INSTALL] Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # uv installs to ~/.local/bin by default
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v uv &>/dev/null; then
+        echo "[OK] uv installed: $(uv --version)"
+    else
+        echo "[ERROR] uv installation failed."
+        echo "        Install manually from: https://docs.astral.sh/uv/getting-started/installation/"
+        exit 1
+    fi
+fi
 
 # --- .NET SDK ---
 if command -v dotnet &>/dev/null; then
@@ -112,6 +147,9 @@ echo ""
 
 # Check if dotnet/godot are reachable in the current shell
 NEEDS_RELOAD=false
+if ! command -v uv &>/dev/null; then
+    NEEDS_RELOAD=true
+fi
 if ! command -v dotnet &>/dev/null; then
     NEEDS_RELOAD=true
 fi
