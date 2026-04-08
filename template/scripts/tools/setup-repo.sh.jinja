@@ -71,7 +71,10 @@ PROTECTION_PAYLOAD=$(cat <<'JSON'
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
     "require_code_owner_reviews": false,
-    "required_approving_review_count": 1
+    "required_approving_review_count": 1{% if reviewer_github_app_name %},
+    "bypass_pull_request_allowances": {
+      "apps": ["{{ reviewer_github_app_name }}"]
+    }{% endif %}
   },
   "restrictions": null,
   "required_conversation_resolution": true,
@@ -107,7 +110,8 @@ echo "  - Auto-delete branches on merge"
 echo "  - Auto-merge enabled"
 echo "  - Wiki, discussions, projects disabled"
 echo "  - Branch protection on main:"
-echo "    - 1 approving review required (stale reviews dismissed)"
+echo "    - 1 approving review required (stale reviews dismissed)"{% if reviewer_github_app_name %}
+echo "    - App '{{ reviewer_github_app_name }}' can bypass PR review requirement"{% endif %}
 echo "    - Status check 'gate' required (must be up to date)"
 echo "    - Conversation resolution required"
 echo "    - Force pushes and deletions blocked"

@@ -40,6 +40,23 @@ else
   echo "All checks passed."
 fi
 
+{% if reviewer_github_app_name %}
+# Use the GitHub App token for merging if available — the App has bypass_pull_request_allowances
+# configured in branch protection, so it can merge without satisfying the review requirement.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_TOKEN=$("${SCRIPT_DIR}/gh-app-token.sh" 2>/dev/null) || true
+
+if [[ -n "$APP_TOKEN" ]]; then
+  echo "Merging PR #${PR_NUMBER} using App identity (bypass review requirement)..."
+  GH_TOKEN="$APP_TOKEN" gh pr merge "$PR_NUMBER" --squash --delete-branch
+else
+  echo "WARNING: App token unavailable — merging with default identity." >&2
+  echo "         If branch protection requires reviews, ensure the PR is approved." >&2
+  echo "Merging PR #${PR_NUMBER}..."
+  gh pr merge "$PR_NUMBER" --squash --delete-branch
+fi
+{% else %}
 echo "Merging PR #${PR_NUMBER}..."
 gh pr merge "$PR_NUMBER" --squash --delete-branch
+{% endif %}
 echo "PR #${PR_NUMBER} merged successfully."

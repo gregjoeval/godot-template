@@ -94,7 +94,7 @@ Verify: `./scripts/tools/gh-app-token.sh`
 | Field | Type | Description |
 |---|---|---|
 | `app_id` | string | The numeric App ID from step 1 |
-| `private_key_path` | string | Absolute path to the `.pem` private key file |
+| `private_key_path` | string | Path to the `.pem` private key file (`~` is expanded) |
 | `installation_id` | string | The numeric Installation ID from step 3 |
 
 ## Overriding the Credentials Path
@@ -107,7 +107,7 @@ export GH_APP_CREDENTIALS_FILE=/path/to/custom/credentials.json
 
 ## Security
 
-- Use absolute paths — the path is passed directly to `openssl`
+- Both `~` and absolute paths are supported for `private_key_path`
 - Ensure the `.pem` file has mode `600` (no group or world read)
 - Never commit credentials — `.gitignore` already excludes `*.pem`
 {% endif %}
