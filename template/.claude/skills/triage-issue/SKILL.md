@@ -17,12 +17,12 @@ Get a brief problem description. If the user hasn't provided one, ask ONE questi
 
 Use the Agent tool with `subagent_type=Explore` to deeply investigate:
 
-- **Where** the bug manifests (GDScript files, scene tree, signal handlers)
+- **Where** the bug manifests (C# files, scene tree, signal handlers)
 - **What** code path is involved (trace the flow through autoloads, components, signals)
 - **Why** it fails (root cause, not just the symptom)
 - **What** related code exists (existing tests, similar working patterns, recent git changes)
 
-Check: source files in `scripts/`, existing tests in `tests_gdunit4/`, `git log` on affected files, error handling flow.
+Check: source files in `scripts/`, existing tests in `tests/`, `git log` on affected files, error handling flow.
 
 ### 3. Identify Fix Approach
 

@@ -49,7 +49,6 @@ All work happens on this branch — never commit directly to `main`.
 
 ### 3. Implement
 
-{% if language == 'csharp' %}
 Write clean, working C# code. Follow existing code patterns in `scripts/` and `scenes/`.
 
 **Code standards:**
@@ -58,16 +57,6 @@ Write clean, working C# code. Follow existing code patterns in `scripts/` and `s
 - `[Export]` for inspector-tunable values
 - Signals via `[Signal]` delegate attribute
 - No namespaces (flat global classes). See `docs/csharp-conventions.md` for full rules.
-{% else %}
-Write clean, working GDScript code. Follow existing code patterns in `scripts/` and `scenes/`.
-
-**Code standards:**
-- `snake_case` for variables/functions/files; `PascalCase` for classes/nodes
-- Prefer `:=` type inference when the type is obvious from the right-hand side. Keep explicit types for: `@export` vars, `@onready` vars using `$`/`%` paths, typed containers with empty literals, int-to-float coercion, and downcasts. See `docs/gdscript-conventions.md` for full rules.
-- `@export` for inspector-tunable values, `@onready` for node references
-- Signals over direct calls for decoupling
-- `class_name` on scripts that others reference by type
-{% endif %}
 
 **Godot patterns** (apply based on need):
 - Signals, Node composition, Autoloads, FSM, Event Bus, Entity-Component, Strategy, Adapter, Mediator
@@ -79,13 +68,8 @@ Read `docs/PRINCIPLES.md` before implementing. It covers all design principles w
 **Reference `docs/DECISIONS.md`** for project-specific domain language, architectural patterns, and key decisions.
 
 **TDD workflow — tests before implementation:**
-{% if language == 'csharp' %}
 1. Read acceptance criteria. Write gdUnit4Net test(s) that assert expected behavior. Tests MUST fail because the implementation doesn't exist yet.
 2. Commit failing tests: `git add tests/ && git commit -m "test(<task-id>): add failing tests for <feature>"`
-{% else %}
-1. Read acceptance criteria. Write gdUnit4 test(s) that assert expected behavior. Tests MUST fail because the implementation doesn't exist yet.
-2. Commit failing tests: `git add tests_gdunit4/ && git commit -m "test(<task-id>): add failing tests for <feature>"`
-{% endif %}
 3. Write minimum implementation to make tests pass.
 4. Commit implementation separately.
 5. Refactor if needed (tests must still pass).
@@ -100,15 +84,8 @@ Read `docs/PRINCIPLES.md` before implementing. It covers all design principles w
 - Pure visual/UI layout work
 - Single-line config or export value changes
 - Prototype/spike work (label commit as such)
-{% if language == 'gdscript' %}
-
-**GDScript TDD note**: In the "red" phase, a failing test may mean a parse error or missing method error — not just a clean assertion failure. This is expected.
-
-Test location: `tests_gdunit4/` with gdUnit4 conventions (`test_*.gd`, functions starting with `test_`).
-{% else %}
 
 Test location: `tests/` with gdUnit4Net conventions.
-{% endif %}
 
 ### 4. Commit and Push in Logical Chunks
 ```bash
@@ -127,7 +104,7 @@ For TDD work, use at least two commits:
 - No debug/temporary code left in
 - Implementation matches acceptance criteria
 - All work committed and pushed
-- Check diff size: `git diff --stat origin/main...HEAD`. If the diff exceeds ~300 lines of GDScript changes (excluding test files and `.tscn` normalization), report `Result: BLOCKED -- PR too large, suggest splitting`.
+- Check diff size: `git diff --stat origin/main...HEAD`. If the diff exceeds ~300 lines of C# changes (excluding test files and `.tscn` normalization), report `Result: BLOCKED -- PR too large, suggest splitting`.
 
 ### 6. Create Pull Request
 
@@ -246,15 +223,9 @@ export CF_HOME=~/.campfire-agent-$TASK_ID
 
 ## Key Project Context
 
-{% if language == 'csharp' %}
 - **Scripts:** `scripts/` — **Tests:** `tests/` — **Stack:** Godot 4.6, C# (.NET 8)
 - **Project patterns:** See `docs/DECISIONS.md`
 - **Test runner:** `dotnet test`
-{% else %}
-- **Scripts:** `scripts/` — **Tests:** `tests_gdunit4/` — **Stack:** Godot 4.6, GDScript
-- **Project patterns:** See `docs/DECISIONS.md`
-- **Test runner:** `./scripts/tools/run_gdunit4_tests.sh`
-{% endif %}
 
 **Update your agent memory** as you discover architectural patterns, code conventions, and implementation insights.
 

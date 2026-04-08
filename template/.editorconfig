@@ -8,7 +8,6 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 max_line_length = 100
-{% if language == 'csharp' %}
 
 [*.cs]
 indent_style = tab
@@ -77,4 +76,3 @@ dotnet_diagnostic.CA1001.severity = none
 
 # Static readonly arrays in tests add noise for one-off test data
 dotnet_diagnostic.CA1861.severity = none
-{% endif %}

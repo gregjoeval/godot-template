@@ -1,8 +1,6 @@
 {
   "recommendations": [
-{% if language == 'csharp' %}
     "ms-dotnettools.csharp",
-{% endif %}
     "geequlim.godot-tools"
   ]
 }

@@ -15,7 +15,6 @@ Thumbs.db
 # IDE
 *.swp
 *.swo
-{% if language == 'csharp' %}
 
 # .NET
 bin/
@@ -23,7 +22,6 @@ obj/
 .vs/
 *.user
 *.suo
-{% endif %}
 
 # Python
 __pycache__/
@@ -36,4 +34,3 @@ __pycache__/
 
 # GitHub App credentials (never commit)
 *.pem
-reviewer-app.env

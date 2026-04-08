@@ -1,0 +1,129 @@
+{% if reviewer_github_app_name %}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# setup-gh-app.sh — Configure GitHub App credentials for reviewer identity.
+#
+# Interactive script that stores credentials for the "{{ reviewer_github_app_name }}" GitHub App.
+# Before running this script, you must:
+#   1. Create the GitHub App in GitHub UI (see docs/github-app-setup.md, steps 1-3)
+#   2. Generate and download the private key (.pem file)
+#   3. Install the App on your repository
+#
+# This script automates credential storage and verification.
+# Idempotent — safe to re-run. Asks before overwriting existing credentials.
+#
+# Depends on: jq, openssl, curl
+
+APP_NAME="{{ reviewer_github_app_name }}"
+CONFIG_DIR="${HOME}/.config/gh-app/${APP_NAME}"
+CREDENTIALS_FILE="${CONFIG_DIR}/credentials.json"
+
+echo "=== GitHub App Setup: ${APP_NAME} ==="
+echo ""
+
+# --- Prerequisite checks ---
+MISSING=()
+command -v jq &>/dev/null || MISSING+=("jq")
+command -v openssl &>/dev/null || MISSING+=("openssl")
+command -v curl &>/dev/null || MISSING+=("curl")
+
+if [[ {% raw %}${#MISSING[@]}{% endraw %} -gt 0 ]]; then
+  echo "[ERROR] Missing required tools: ${MISSING[*]}"
+  echo "        Install them before running this script."
+  exit 1
+fi
+echo "[OK] Prerequisites satisfied (jq, openssl, curl)"
+
+# --- Check for existing credentials ---
+if [[ -f "${CREDENTIALS_FILE}" ]]; then
+  echo ""
+  echo "[WARN] Credentials already exist at: ${CREDENTIALS_FILE}"
+  read -r -p "        Overwrite? [y/N] " OVERWRITE
+  if [[ ! "${OVERWRITE}" =~ ^[Yy]$ ]]; then
+    echo "[SKIP] Keeping existing credentials."
+    echo ""
+    echo "To verify your existing setup, run:"
+    echo "  ./scripts/tools/gh-app-token.sh"
+    exit 0
+  fi
+  echo ""
+fi
+
+# --- Collect credentials ---
+echo "Enter the credentials from your GitHub App settings."
+echo "(See docs/github-app-setup.md for where to find these values.)"
+echo ""
+
+read -r -p "App ID: " APP_ID
+if [[ -z "${APP_ID}" ]]; then
+  echo "[ERROR] App ID is required."
+  exit 1
+fi
+
+read -r -p "Installation ID: " INSTALLATION_ID
+if [[ -z "${INSTALLATION_ID}" ]]; then
+  echo "[ERROR] Installation ID is required."
+  exit 1
+fi
+
+read -r -p "Path to downloaded .pem file: " PEM_SOURCE
+PEM_SOURCE="${PEM_SOURCE/#\~/$HOME}"
+if [[ ! -f "${PEM_SOURCE}" ]]; then
+  echo "[ERROR] File not found: ${PEM_SOURCE}"
+  exit 1
+fi
+
+# --- Create config directory ---
+echo ""
+echo "[RUN] Creating config directory: ${CONFIG_DIR}"
+mkdir -p "${CONFIG_DIR}"
+chmod 700 "${CONFIG_DIR}"
+echo "[OK] Config directory ready"
+
+# --- Copy PEM file ---
+PEM_DEST="${CONFIG_DIR}/private-key.pem"
+if [[ "${PEM_SOURCE}" != "${PEM_DEST}" ]]; then
+  echo "[RUN] Copying private key to ${PEM_DEST}"
+  cp "${PEM_SOURCE}" "${PEM_DEST}"
+else
+  echo "[OK] Private key already in config directory"
+fi
+chmod 600 "${PEM_DEST}"
+echo "[OK] Private key permissions set (mode 600)"
+
+# --- Write credentials file ---
+echo "[RUN] Writing credentials to ${CREDENTIALS_FILE}"
+cat > "${CREDENTIALS_FILE}" <<CREDS
+{
+  "app_id": "${APP_ID}",
+  "private_key_path": "${PEM_DEST}",
+  "installation_id": "${INSTALLATION_ID}"
+}
+CREDS
+chmod 600 "${CREDENTIALS_FILE}"
+echo "[OK] Credentials file written"
+
+# --- Verify setup ---
+echo ""
+echo "[RUN] Verifying setup by generating a test token..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if TOKEN=$("${SCRIPT_DIR}/gh-app-token.sh" 2>&1); then
+  echo "[OK] Token generated successfully ({% raw %}${#TOKEN}{% endraw %} chars)"
+else
+  echo "[ERROR] Token generation failed:"
+  echo "        ${TOKEN}"
+  echo ""
+  echo "Check your credentials and try again."
+  exit 1
+fi
+
+echo ""
+echo "=== Setup Complete ==="
+echo ""
+echo "Credentials stored at: ${CREDENTIALS_FILE}"
+echo "Private key stored at: ${PEM_DEST}"
+echo ""
+echo "The reviewer agent will automatically use these credentials"
+echo "for PR approvals with a distinct identity."
+{% endif %}

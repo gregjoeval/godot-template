@@ -21,18 +21,16 @@ jobs:
         with:
           fetch-depth: 0
 
-{% if language == 'csharp' %}
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-{% endif %}
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
           version: {{ godot_version }}.0
-          use-dotnet: {% if language == 'csharp' %}true{% else %}false{% endif %}
+          use-dotnet: true
           include-templates: true
 
       - name: Determine version
@@ -46,14 +44,12 @@ jobs:
 
       - name: Import project
         run: godot --headless --import --path . --quit 2>/dev/null || true
-{% if language == 'csharp' %}
 
       - name: Restore .NET dependencies
         run: dotnet restore {{ project_pascal }}.sln
 
       - name: Build .NET project
         run: dotnet build {{ project_pascal }}.sln --no-restore
-{% endif %}
 
       - name: Build
         run: ./scripts/tools/build.sh godot --version "${{ "{{" }} steps.version.outputs.version {{ "}}" }}"

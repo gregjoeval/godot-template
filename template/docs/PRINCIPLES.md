@@ -62,7 +62,7 @@ Subclasses must honor base class contracts. If code works with a base type, it m
 
 **When it helps:** Prevents subtle bugs where overriding a method breaks assumptions elsewhere.
 
-**When it hurts:** Rarely an issue in GDScript since deep inheritance hierarchies are discouraged anyway. If you're fighting LSP violations, the fix is usually composition, not more careful inheritance.
+**When it hurts:** Rarely an issue in Godot C# since deep inheritance hierarchies are discouraged anyway. If you're fighting LSP violations, the fix is usually composition, not more careful inheritance.
 
 ### Interface Segregation Principle
 
@@ -70,7 +70,7 @@ Keep interfaces small and focused. Don't force consumers to depend on methods th
 
 **When it helps:** Reduces coupling. A node that only needs `take_damage()` shouldn't depend on an interface that also includes `equip_weapon()`.
 
-**When it hurts:** GDScript doesn't have formal interfaces. Over-splitting signals or creating many tiny component scripts for ISP's sake adds indirection without benefit. In Godot, duck typing and signals naturally provide segregation.
+**When it hurts:** Over-splitting signals or creating many tiny component scripts for ISP's sake adds indirection without benefit. In Godot, C# interfaces and signals naturally provide segregation — use them pragmatically.
 
 ### Dependency Inversion Principle
 
@@ -154,7 +154,7 @@ These aren't bugs — they're indicators of design friction:
 | You could add an abstraction layer "for flexibility" | Wait until you need the flexibility — YAGNI |
 | A function is long but reads top-to-bottom clearly | Leave it — extraction would scatter a linear flow across methods |
 | You want to mock something for testing | Check if you can test through the public interface first — mocking is often a sign of tight coupling, not a solution |
-| A pattern from another language doesn't map to GDScript | Use Godot's native patterns (signals, scenes, resources) instead of forcing external paradigms |
+| A pattern doesn't map naturally to Godot | Use Godot's native patterns (signals, scenes, resources) instead of forcing external paradigms |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Guide test-driven development using red-green-refactor cycles with gdUnit4. Emphasizes vertical slices (one test drives one implementation), behavior-driven testing through public interfaces, and GDScript conventions. Use when implementing features, fixing bugs with TDD, or when user mentions "tdd", "test first", or "red green".
+description: Guide test-driven development using red-green-refactor cycles with gdUnit4Net. Emphasizes vertical slices (one test drives one implementation), behavior-driven testing through public interfaces, and C# conventions. Use when implementing features, fixing bugs with TDD, or when user mentions "tdd", "test first", or "red green".
 ---
 
 # Test-Driven Development (gdUnit4)
