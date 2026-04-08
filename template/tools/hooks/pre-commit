@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
-# Pre-commit hook: auto-generate missing .uid sidecar files for staged .gd, .gdshader,
-# and .gdextension files, then bridge to the pre-commit framework (gdformat, gdlint,
-# typecheck, normalization).
-# Godot 4.6 requires a .uid file for every .gd, .gdshader, and .gdextension file.
+# Pre-commit hook: auto-generate missing .uid sidecar files for staged .gdshader
+# and .gdextension files, then bridge to the pre-commit framework (normalization).
+# Godot 4.6 requires a .uid file for every .gdshader and .gdextension file.
 
-{% if language == 'gdscript' %}
-staged_uid_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(gd|gdshader|gdextension)$' || true)
-{% else %}
 staged_uid_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(gdshader|gdextension)$' || true)
-{% endif %}
 
 # Capture originally-staged scene/resource files BEFORE pre-commit runs normalization
 originally_staged_scenes=$(git diff --cached --name-only -- '*.tscn' '*.tres' 'project.godot' 2>/dev/null || true)
 
-# --- UID sidecar generation for .gd, .gdshader, .gdextension files ---
+# --- UID sidecar generation for .gdshader, .gdextension files ---
 if [ -n "$staged_uid_files" ]; then
     generated=()
 
@@ -39,7 +34,7 @@ if [ -n "$staged_uid_files" ]; then
         generated+=("$uid_file (created)")
     done <<< "$staged_uid_files"
 
-    if [ {% raw %}${#generated[@]}{% endraw %} -gt 0 ]; then
+    if [ ${#generated[@]} -gt 0 ]; then
         echo "pre-commit: auto-generated .uid sidecar files:"
         for f in "${generated[@]}"; do
             echo "  $f"
@@ -47,11 +42,11 @@ if [ -n "$staged_uid_files" ]; then
     fi
 fi
 
-# Bridge to pre-commit framework (gdformat, gdlint, typecheck, normalization)
+# Bridge to pre-commit framework (normalization)
 if command -v pre-commit &>/dev/null; then
     pre-commit run --hook-stage pre-commit || exit $?
 else
-    echo "pre-commit: WARNING — 'pre-commit' not installed; skipping gdformat/gdlint/typecheck"
+    echo "pre-commit: WARNING — 'pre-commit' not installed; skipping validation"
     echo "pre-commit: Run 'pip install pre-commit && pre-commit install' to enable validation"
 fi
 

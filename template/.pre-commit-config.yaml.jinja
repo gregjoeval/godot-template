@@ -7,74 +7,12 @@ repos:
         language: system
         files: '\.(tscn|tres)$|^project\.godot$'
         pass_filenames: false
-{% if language == 'gdscript' %}
-
-      - id: nested-generics
-        name: No nested generics in GDScript
-        entry: ./scripts/tools/check_nested_generics.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-
-      - id: preload-shadows
-        name: No const preload shadowing class_name
-        entry: ./scripts/tools/check_preload_shadows.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-
-      - id: no-warning-ignore
-        name: No @warning_ignore in GDScript
-        entry: ./scripts/tools/check_warning_ignore.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/|scripts/util/config_helper\.gd|scripts/util/node_cast\.gd'
-
-      - id: type-narrowing
-        name: No type narrowing violations in GDScript
-        entry: ./scripts/tools/check_type_narrowing.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-
-      - id: gdformat
-        name: GDScript format check
-        entry: gdformat --check
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-
-      - id: gdlint
-        name: GDScript lint
-        entry: gdlint
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-{% endif %}
 
       - id: shader-no-return
         name: No return in shader processor functions
         entry: ./scripts/tools/check_shaders.sh
         language: system
         files: '\.gdshader$'
-{% if language == 'gdscript' %}
-
-      - id: gdtypecheck
-        name: GDScript type check (requires godot)
-        entry: ./scripts/tools/check_types.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-
-      - id: gdtest
-        name: gdUnit4 tests (requires godot)
-        entry: ./scripts/tools/run_gdunit4_tests.sh
-        language: system
-        files: '\.gd$'
-        exclude: 'addons/'
-        pass_filenames: false
-{% endif %}
-{% if language == 'csharp' %}
 
       - id: dotnet-build
         name: C# compile and type check
@@ -96,7 +34,6 @@ repos:
         language: system
         files: '\.cs$'
         pass_filenames: false
-{% endif %}
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.4.1

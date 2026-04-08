@@ -2,35 +2,6 @@ _subdirectory: template
 _exclude:
   - copier.yml
   - ".git"
-  - "{% if not multiplayer %}scripts/network{% endif %}"
-  # GDScript-only files (exclude when csharp)
-  - "{% if language == 'csharp' %}scenes/main.gd{% endif %}"
-  - "{% if language == 'csharp' %}tests_gdunit4{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_types.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_nested_generics.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_preload_shadows.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_warning_ignore.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_type_narrowing.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/run_gdunit4_tests.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/smoke_test.sh{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/smoke_test.gd{% endif %}"
-  - "{% if language == 'csharp' %}scripts/tools/check_all_scripts.gd{% endif %}"
-  - "{% if language == 'csharp' %}docs/gdscript-conventions.md{% endif %}"
-  - "{% if language == 'csharp' %}.gdlintrc{% endif %}"
-  - "{% if language == 'csharp' %}.gdformatrc{% endif %}"
-  # C#-only files (exclude when gdscript — patterns match rendered output paths)
-  - "{% if language == 'gdscript' %}*.csproj{% endif %}"
-  - "{% if language == 'gdscript' %}*.sln{% endif %}"
-  - "{% if language == 'gdscript' %}GlobalUsings.cs{% endif %}"
-  - "{% if language == 'gdscript' %}.csharpierrc.yaml{% endif %}"
-  - "{% if language == 'gdscript' %}.csharpierignore{% endif %}"
-  - "{% if language == 'gdscript' %}docs/csharp-conventions.md{% endif %}"
-  - "{% if language == 'gdscript' %}tests{% endif %}"
-  - "{% if language == 'gdscript' %}scenes/Main.cs{% endif %}"
-  - "{% if language == 'gdscript' %}.config{% endif %}"
-  - "{% if language == 'gdscript' %}scripts/tools/setup-dev-env.sh{% endif %}"
-  # Multiplayer + C# edge case
-  - "{% if not multiplayer or language == 'gdscript' %}scripts/network/NetworkManager.cs{% endif %}"
 
 project_name:
   type: str
@@ -39,16 +10,9 @@ project_name:
 
 project_slug:
   type: str
+  when: false
   default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') | regex_replace('[^a-z0-9-]', '') }}"
   help: "Kebab-case slug for directories and build artifacts (auto-derived from project_name)"
-
-language:
-  type: str
-  choices:
-    "GDScript": "gdscript"
-    "C# (.NET)": "csharp"
-  default: "gdscript"
-  help: "Primary scripting language"
 
 project_pascal:
   type: str
@@ -56,13 +20,13 @@ project_pascal:
   default: "{{ project_name | replace('-', ' ') | replace('_', ' ') | title | replace(' ', '') }}"
   help: "PascalCase project name for C# files (auto-derived)"
 
-multiplayer:
-  type: bool
-  default: false
-  help: "Include multiplayer scaffolding (NetworkManager autoload, RPC patterns)?"
-
 godot_version:
   type: str
   default: "4.6"
   help: "Godot major.minor version (e.g. 4.6, 4.3 — do not include patch)"
   validator: "{% if not godot_version | regex_search('^4\\.\\d+$') %}Must be 4.x format without patch (e.g. 4.6, 4.3){% endif %}"
+
+reviewer_github_app_name:
+  type: str
+  default: ""
+  help: "GitHub App name for reviewer identity (e.g. my-project-reviewer). Leave empty to skip GitHub App setup."

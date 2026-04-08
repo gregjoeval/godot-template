@@ -1,32 +1,3 @@
-{% if language == 'gdscript' %}
-GODOT ?= godot
-GDUNIT4_SCRIPT := addons/gdUnit4/bin/GdUnitCmdTool.gd
-
-.PHONY: test test-single lint check bump setup
-
-## Run all gdUnit4 tests headlessly.
-test:
-	$(GODOT) --headless --path . \
-		-s $(GDUNIT4_SCRIPT) \
-		-a "res://tests_gdunit4/" \
-		--ignoreHeadlessMode
-
-## Run a single test file. Usage: make test-single FILE=tests_gdunit4/test_foo.gd
-test-single:
-	$(GODOT) --headless --path . \
-		-s $(GDUNIT4_SCRIPT) \
-		-a "res://$(FILE)" \
-		--ignoreHeadlessMode
-
-## Lint all GDScript files with gdtoolkit.
-lint:
-	gdlint scripts/ tests_gdunit4/
-
-## Static analysis check (gdtoolkit format check).
-check:
-	gdformat --check scripts/ tests_gdunit4/
-{% endif %}
-{% if language == 'csharp' %}
 SOLUTION := {{ project_pascal }}.sln
 
 .PHONY: test build format bump setup
@@ -42,7 +13,6 @@ build:
 ## Check formatting with CSharpier.
 format:
 	dotnet csharpier check .
-{% endif %}
 
 ## Bump version using conventional commits and generate changelog.
 bump:
@@ -51,19 +21,20 @@ bump:
 ## Configure GitHub repo settings and branch protection (requires gh CLI + admin).
 setup-repo:
 	./scripts/tools/setup-repo.sh
+{% if reviewer_github_app_name %}
+
+## Set up GitHub App credentials for reviewer identity.
+setup-gh-app:
+	./scripts/tools/setup-gh-app.sh
+{% endif %}
 
 ## Set up development environment (requires .NET runtime and Python 3).
 setup:
 	git config core.hooksPath tools/hooks
-{% if language == 'gdscript' %}
-	uv tool install gdtoolkit
-{% endif %}
 	uv tool install pre-commit
 	uv tool install commitizen
 	pre-commit install
-{% if language == 'csharp' %}
 	dotnet tool restore
-{% endif %}
 	dotnet tool install --global Chickensoft.GodotEnv
 	godotenv godot install
 	godotenv godot use

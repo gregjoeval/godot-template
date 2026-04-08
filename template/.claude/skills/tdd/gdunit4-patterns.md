@@ -1,94 +1,122 @@
-# gdUnit4 Patterns Reference
+# gdUnit4Net Patterns Reference
 
 ## Test Structure
 
-```gdscript
-extends GdUnitTestSuite
+```csharp
+using GdUnit4;
+using static GdUnit4.Assertions;
 
-var subject: MyComponent
+[TestSuite]
+public partial class TestMyComponent : TestSuite
+{
+    private MyComponent _subject = null!;
 
+    [Before(Test)]
+    public void Setup()
+    {
+        _subject = AutoFree(new MyComponent());
+        AddChild(_subject);
+    }
 
-func before_test() -> void:
-    subject = auto_free(MyComponent.new())
-    add_child(subject)
+    [TestCase]
+    public void TestInitialState()
+    {
+        AssertBool(_subject.IsActive).IsFalse();
+    }
 
-
-func test_initial_state() -> void:
-    assert_bool(subject.is_active()).is_false()
-
-
-func test_activate_changes_state() -> void:
-    subject.activate()
-    assert_bool(subject.is_active()).is_true()
+    [TestCase]
+    public void TestActivateChangesState()
+    {
+        _subject.Activate();
+        AssertBool(_subject.IsActive).IsTrue();
+    }
+}
 ```
 
-- Extend `GdUnitTestSuite`
-- `before_test()` creates fresh subject per test
-- Two blank lines between functions (gdformat)
+- Extend `TestSuite`, annotate with `[TestSuite]`
+- `[Before(Test)]` creates fresh subject per test
 - One assertion concept per test
+- Class must be `partial` (Godot codegen requirement)
 
 ## Node Lifecycle
 
-**Always**: `auto_free()` + `add_child()` with explicit type annotation:
+**Always**: `AutoFree()` + `AddChild()`:
 
-```gdscript
-# GOOD -- explicit type preserves type safety
-var node: Node2D = auto_free(Node2D.new())
-add_child(node)
-
-# BAD -- auto_free returns Variant, loses type
-var node := auto_free(Node2D.new())
+```csharp
+// AutoFree registers for cleanup after test
+_subject = AutoFree(new MyComponent());
+AddChild(_subject);
 ```
 
-Child nodes of an auto-freed parent don't need separate `auto_free()`.
+Child nodes of an auto-freed parent don't need separate `AutoFree()`.
 
 ## Common Assertions
 
 | Method | Purpose | Example |
 |---|---|---|
-| `assert_int(val)` | Integer | `.is_equal(42)`, `.is_greater(0)` |
-| `assert_float(val)` | Float | `.is_equal(1.0)`, `.is_equal_approx(1.0, 0.01)` |
-| `assert_str(val)` | String | `.is_equal("stone")`, `.contains("error")` |
-| `assert_bool(val)` | Boolean | `.is_true()`, `.is_false()` |
-| `assert_object(val)` | Object/null | `.is_null()`, `.is_not_null()` |
-| `assert_array(val)` | Array | `.has_size(3)`, `.contains([item])` |
-| `assert_signal(obj)` | Signal (await) | `.call("is_emitted", "sig", [args])` |
+| `AssertInt(val)` | Integer | `.IsEqual(42)`, `.IsGreater(0)` |
+| `AssertFloat(val)` | Float | `.IsEqual(1.0f)`, `.IsEqualApprox(1.0f, 0.01f)` |
+| `AssertString(val)` | String | `.IsEqual("stone")`, `.Contains("error")` |
+| `AssertBool(val)` | Boolean | `.IsTrue()`, `.IsFalse()` |
+| `AssertObject(val)` | Object/null | `.IsNull()`, `.IsNotNull()` |
+| `AssertArray(val)` | Array | `.HasSize(3)`, `.Contains(item)` |
+| `AssertSignal(obj)` | Signal (await) | `.IsEmitted("signal_name")` |
 
-Custom failure messages: `.override_failure_message("context info")`
+Custom failure messages: `.OverrideFailureMessage("context info")`
 
 ## Signal Testing
 
-```gdscript
-func test_damage_emits_health_changed() -> void:
-    monitor_signals(health_comp)
-    health_comp.take_damage(10.0)
-    await assert_signal(health_comp).call("is_emitted", "health_changed", [90.0, 100.0])
+```csharp
+[TestCase]
+public async Task TestDamageEmitsHealthChanged()
+{
+    MonitorSignals(_healthComp);
+    _healthComp.TakeDamage(10.0f);
+    await AssertSignal(_healthComp).IsEmitted("HealthChanged", 90.0f, 100.0f);
+}
 ```
 
-- Call `monitor_signals()` BEFORE the triggering action
-- Use `.call()` syntax for `is_emitted`/`is_not_emitted`
+- Call `MonitorSignals()` BEFORE the triggering action
 - Include expected args when signal has parameters
-- **Do NOT** use `monitor_signals()` on autoload singletons -- use manual signal connections instead
+- Signal tests are `async Task` — use `await`
+- **Do NOT** use `MonitorSignals()` on autoload singletons — use manual signal connections instead
 
 ## Autoload State Resets
 
-Reset in `before_test()` or `after_test()` to prevent test pollution.
-Add reset methods to `GdUnitTestHelper` in `tests_gdunit4/helpers/test_helper.gd` as your project grows.
+Reset in `[Before(Test)]` or `[After(Test)]` to prevent test pollution.
+Add reset methods to `TestHelper` in `tests/helpers/TestHelper.cs` as your project grows.
 
-```gdscript
-func before_test() -> void:
-    GdUnitTestHelper.reset_my_system()  # add your own resets
+```csharp
+[Before(Test)]
+public void Setup()
+{
+    TestHelper.ResetMySystem(); // add your own resets
+}
+```
+
+## Multiplayer Testing
+
+Use `TestHelper.SetupOfflineMultiplayer(this)` to make `Multiplayer.IsServer()` return `true` in tests:
+
+```csharp
+[Before(Test)]
+public void Setup()
+{
+    TestHelper.SetupOfflineMultiplayer(this);
+    _subject = AutoFree(new NetworkManager());
+    AddChild(_subject);
+}
 ```
 
 ## What to Test
 
 | Category | Test? | Example |
 |---|---|---|
-| Pure logic/calculations | Yes | `calculate_value(n)` |
+| Pure logic/calculations | Yes | `CalculateValue(n)` |
 | State transitions | Yes | FSM state changes |
-| Signal emission | Yes | `value_changed` on update |
+| Signal emission | Yes | `ValueChanged` on update |
 | Data classes | Yes | Typed data containers |
-| Component behavior | Yes | `take_damage()` |
+| Component behavior | Yes | `TakeDamage()` |
 | Visual rendering | No | Sprite appearance, animations |
 | Physics feel | Manual | Collision response, knockback |
 | UI layout | Manual | HUD positioning, menu flow |
@@ -96,8 +124,8 @@ func before_test() -> void:
 
 ## Naming
 
-- Test files: `test_<module>.gd` in `tests_gdunit4/`
-- Test functions: `test_<what_is_tested>()`
-- Regression tests: `test_regression_<description>()`
-- Helper methods: `_make_<thing>()` (underscore prefix)
-- Fixtures: no leading underscore on instance variables
+- Test files: `Test<Module>.cs` in `tests/`
+- Test methods: `Test<WhatIsTested>()`
+- Regression tests: `TestRegression<Description>()`
+- Helper methods: private `Make<Thing>()` or `Setup<Thing>()`
+- Private fields: `_camelCase`

@@ -1,10 +1,10 @@
 # {{ project_name }}
 
-A Godot {{ godot_version }} project.
+A Godot {{ godot_version }} C# project.
 
 ## Prerequisites
 
-- [.NET runtime](https://dotnet.microsoft.com/download) (for GodotEnv)
+- [.NET runtime](https://dotnet.microsoft.com/download) (for GodotEnv and C# build)
 - [Python 3](https://www.python.org/downloads/) + [uv](https://docs.astral.sh/uv/)
 
 ## Setup
@@ -15,12 +15,12 @@ After cloning, run the setup target to install tooling, configure git hooks, and
 make setup
 ```
 
-This installs GDScript tooling (gdtoolkit, pre-commit, commitizen) via uv, then uses
+This installs C# tooling (CSharpier, pre-commit, commitizen) via uv and dotnet, then uses
 [GodotEnv](https://github.com/chickensoft-collective/GodotEnv) to download and activate
 the correct Godot version (pinned in `.godotrc`).
 
 ## Development
 
-See `docs/gdscript-conventions.md` for typing rules and toolchain pitfalls.
+See `docs/csharp-conventions.md` for typing rules and analyzer config.
 
 See `CLAUDE.md` for agent workflow, quality gates, and conventions.

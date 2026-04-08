@@ -33,7 +33,7 @@ Document foundational decisions that remain stable across all phases:
 Each phase is a thin, complete slice through ALL layers:
 
 ```
-scene tree → GDScript logic → signals → state → tests
+scene tree → C# logic → signals → state → tests
 ```
 
 NOT horizontal slices ("just the scripts", "just the tests"). Each completed slice should be independently demoable.

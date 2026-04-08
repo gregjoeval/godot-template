@@ -149,7 +149,7 @@ When creating issues:
 
 Read `docs/DECISIONS.md` for project-specific domain language, architectural patterns, and key decisions recorded by the team.
 
-- **Engine**: Godot 4.6, GDScript
+- **Engine**: Godot 4.6, C# (.NET 8)
 - **Design principles**: Read `docs/PRINCIPLES.md` for the project's principle hierarchy and trade-off guidance. TDD is enforced — tests before code.
 
 ---

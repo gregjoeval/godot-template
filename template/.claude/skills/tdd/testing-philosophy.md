@@ -4,18 +4,18 @@
 
 A deep module has a **small, simple interface** hiding **significant implementation complexity**. Test the interface, not the internals.
 
-Good: test `MyComponent.calculate_value(weight)` returns expected values for various inputs.
-Bad: test that `calculate_value` internally uses a specific formula with specific constants.
+Good: test `MyComponent.CalculateValue(weight)` returns expected values for various inputs.
+Bad: test that `CalculateValue` internally uses a specific formula with specific constants.
 
 When designing code for testability, prefer deep modules -- they give you a stable test surface that survives refactoring.
 
 ## Mocking Guidelines
 
-**Prefer real code paths over mocks.** Most of our code can be tested with real objects using `auto_free()` + `add_child()`.
+**Prefer real code paths over mocks.** Most of our code can be tested with real objects using `AutoFree()` + `AddChild()`.
 
 **When to mock:**
 - External dependencies (network, filesystem) -- but prefer `OfflineMultiplayerPeer` for multiplayer
-- Autoload state that's expensive to reset -- but we have `GdUnitTestHelper.reset_*()` methods
+- Autoload state that's expensive to reset -- but we have `TestHelper.Reset*()` methods
 
 **When NOT to mock:**
 - Internal collaborators (components within a scene)

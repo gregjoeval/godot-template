@@ -1,20 +1,23 @@
+{% if reviewer_github_app_name %}
 #!/usr/bin/env bash
 # gh-app-token.sh — Generate a GitHub App installation access token
 #
-# Reads credentials from ~/.config/godot-reviewer-app/app-credentials.json and outputs
-# a fresh installation token to stdout. The token can be used as GH_TOKEN for gh CLI
-# calls that require a distinct identity (e.g., approving PRs without self-approval).
+# Reads credentials from ~/.config/gh-app/{{ reviewer_github_app_name }}/credentials.json
+# and outputs a fresh installation token to stdout. The token can be used as GH_TOKEN
+# for gh CLI calls that require a distinct identity (e.g., approving PRs without self-approval).
+#
+# Override the credentials path by setting GH_APP_CREDENTIALS_FILE.
 #
 # Depends on: jq, openssl
 # Usage: token=$(./scripts/tools/gh-app-token.sh)
 set -euo pipefail
 
-CREDENTIALS_FILE="${HOME}/.config/godot-reviewer-app/app-credentials.json"
+CREDENTIALS_FILE="${GH_APP_CREDENTIALS_FILE:-${HOME}/.config/gh-app/{{ reviewer_github_app_name }}/credentials.json}"
 
 # --- Validate credentials file exists ---
 if [[ ! -f "${CREDENTIALS_FILE}" ]]; then
   echo "ERROR: Credentials file not found: ${CREDENTIALS_FILE}" >&2
-  echo "See docs/github-app-setup.md for setup instructions." >&2
+  echo "Run ./scripts/tools/setup-gh-app.sh to configure, or see docs/github-app-setup.md." >&2
   exit 1
 fi
 
@@ -84,3 +87,4 @@ fi
 
 # Output ONLY the token to stdout (no trailing newline issues from printf)
 printf '%s\n' "${TOKEN}"
+{% endif %}

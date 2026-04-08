@@ -9,12 +9,12 @@ When assessing whether modules can be deepened (merged behind a simpler interfac
 ### In-process dependencies
 Pure computation and in-memory state, no I/O. Always deepenable — merge directly.
 
-**Godot examples**: Utility functions, Resource subclasses, pure GDScript calculations, state machine logic.
+**Godot examples**: Utility functions, Resource subclasses, pure C# calculations, state machine logic.
 
 ### Local-substitutable dependencies
 Test stand-ins available locally. Deepenable when the substitute exists.
 
-**Godot examples**: Scene tree (instantiate test scenes), file I/O (use `res://` test fixtures), timer-based logic (use `await_idle_frame` in gdUnit4).
+**Godot examples**: Scene tree (instantiate test scenes), file I/O (use `res://` test fixtures), timer-based logic (use `await_idle_frame` in gdUnit4Net).
 
 ### Remote but owned dependencies
 Your own networked services. Define a port interface at the module boundary with both production and test adapters.
@@ -38,14 +38,17 @@ When you deepen a module:
 
 ### What Good Boundary Tests Look Like
 
-```gdscript
-# Test the deep module through its public interface
-func test_combat_system_applies_damage_with_armor_reduction() -> void:
-    var combat = CombatSystem.new()
-    combat.configure(base_damage = 10, armor = 3)
-    var result = combat.resolve_attack()
-    assert_int(result.damage_dealt).is_equal(7)
+```csharp
+// Test the deep module through its public interface
+[TestCase]
+public void TestCombatSystemAppliesDamageWithArmorReduction()
+{
+    var combat = new CombatSystem();
+    combat.Configure(baseDamage: 10, armor: 3);
+    var result = combat.ResolveAttack();
+    AssertInt(result.DamageDealt).IsEqual(7);
+}
 
-# NOT: test_calculate_armor_reduction, test_apply_damage_modifier, etc.
-# Those test implementation details that may change during refactoring
+// NOT: TestCalculateArmorReduction, TestApplyDamageModifier, etc.
+// Those test implementation details that may change during refactoring
 ```
