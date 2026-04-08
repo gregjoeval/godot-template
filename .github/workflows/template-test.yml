@@ -14,8 +14,8 @@ env:
   GODOT_VERSION: "4.6-stable"
 
 jobs:
-  test-gdscript:
-    name: Test (gdscript)
+  test-template:
+    name: Test template generation
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -26,262 +26,62 @@ jobs:
         with:
           version: "latest"
 
-      - name: Generate project (gdscript, multiplayer=false)
+      - name: Generate project (defaults)
         run: |
-          uvx copier copy --defaults --trust . /tmp/test-project-gd
-          ls /tmp/test-project-gd
+          uvx copier copy --defaults --trust . /tmp/test-project
+          ls /tmp/test-project
 
       - name: Verify project.godot exists
-        run: test -f /tmp/test-project-gd/project.godot
+        run: test -f /tmp/test-project/project.godot
 
       - name: Verify pyproject.toml exists
-        run: test -f /tmp/test-project-gd/pyproject.toml
-
-      - name: Verify no NetworkManager in project.godot
-        run: |
-          if grep -q "NetworkManager" /tmp/test-project-gd/project.godot; then
-            echo "FAIL: NetworkManager found in project.godot with multiplayer=false"
-            exit 1
-          fi
-          echo "PASS: No NetworkManager with multiplayer=false"
-
-      - name: Verify scenes/main.tscn exists
-        run: test -f /tmp/test-project-gd/scenes/main.tscn
-
-      - name: Verify GDScript files present
-        run: |
-          test -f /tmp/test-project-gd/scenes/main.gd
-          test -f /tmp/test-project-gd/.gdlintrc
-          test -d /tmp/test-project-gd/tests_gdunit4
-
-      - name: Verify no C# files present
-        run: |
-          ! test -f /tmp/test-project-gd/GlobalUsings.cs
-          ! test -f /tmp/test-project-gd/.csharpierrc.yaml
-          ! ls /tmp/test-project-gd/*.csproj 2>/dev/null
-          echo "PASS: No C# files in GDScript project"
-
-      - name: Verify no-dotnet in .godotrc
-        run: grep -q "no-dotnet" /tmp/test-project-gd/.godotrc
-
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/godot
-          key: godot-${{ env.GODOT_VERSION }}
-
-      - name: Install Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
-          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
-          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
-
-      - name: Import generated project
-        run: godot --headless --import --path /tmp/test-project-gd --quit 2>/dev/null || true
-
-      - name: Type check generated GDScript
-        run: |
-          cd /tmp/test-project-gd
-          ./scripts/tools/check_types.sh godot
-
-      - name: Format check generated GDScript
-        run: |
-          cd /tmp/test-project-gd
-          uvx --from gdtoolkit gdformat --check scenes/ scripts/ 2>/dev/null || true
-
-      - name: Lint generated GDScript
-        run: |
-          cd /tmp/test-project-gd
-          uvx --from gdtoolkit gdlint scenes/ scripts/ 2>/dev/null || true
-
-  test-gdscript-multiplayer:
-    name: Test (gdscript, multiplayer=true)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "latest"
-
-      - name: Generate project (gdscript, multiplayer=true)
-        run: |
-          uvx copier copy --defaults --trust --data multiplayer=true . /tmp/test-project-gd-mp
-          ls /tmp/test-project-gd-mp
-
-      - name: Verify pyproject.toml exists
-        run: test -f /tmp/test-project-gd-mp/pyproject.toml
-
-      - name: Verify NetworkManager in project.godot
-        run: |
-          if ! grep -q "NetworkManager" /tmp/test-project-gd-mp/project.godot; then
-            echo "FAIL: NetworkManager not found in project.godot with multiplayer=true"
-            exit 1
-          fi
-          echo "PASS: NetworkManager present with multiplayer=true"
-
-      - name: Verify CLAUDE.md multiplayer section
-        run: |
-          if ! grep -q "Multiplayer Patterns" /tmp/test-project-gd-mp/CLAUDE.md; then
-            echo "FAIL: Multiplayer Patterns section missing from CLAUDE.md"
-            exit 1
-          fi
-          echo "PASS: Multiplayer Patterns section present"
-
-      - name: Verify setup_offline_multiplayer in test helper
-        run: |
-          if ! grep -q "setup_offline_multiplayer" /tmp/test-project-gd-mp/tests_gdunit4/helpers/test_helper.gd; then
-            echo "FAIL: setup_offline_multiplayer not found in test_helper.gd"
-            exit 1
-          fi
-          echo "PASS: setup_offline_multiplayer present"
-
-      - name: Verify RPC section in gdscript-conventions
-        run: |
-          if ! grep -q "RPC Type Safety" /tmp/test-project-gd-mp/docs/gdscript-conventions.md; then
-            echo "FAIL: RPC Type Safety section missing from gdscript-conventions.md"
-            exit 1
-          fi
-          echo "PASS: RPC section present"
-
-      - name: Cache Godot
-        id: cache-godot
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/godot
-          key: godot-${{ env.GODOT_VERSION }}
-
-      - name: Install Godot
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
-          chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
-          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
-
-      - name: Import generated project
-        run: godot --headless --import --path /tmp/test-project-gd-mp --quit 2>/dev/null || true
-
-      - name: Type check generated GDScript
-        run: |
-          cd /tmp/test-project-gd-mp
-          ./scripts/tools/check_types.sh godot
-
-  test-csharp:
-    name: Test (csharp)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "latest"
-
-      - name: Generate project (csharp, multiplayer=false)
-        run: |
-          uvx copier copy --defaults --trust --data language=csharp . /tmp/test-project-cs
-          ls /tmp/test-project-cs
-
-      - name: Verify project.godot exists
-        run: test -f /tmp/test-project-cs/project.godot
+        run: test -f /tmp/test-project/pyproject.toml
 
       - name: Verify C# files present
         run: |
-          test -f /tmp/test-project-cs/MyGodotGame.csproj
-          test -f /tmp/test-project-cs/MyGodotGame.sln
-          test -f /tmp/test-project-cs/GlobalUsings.cs
-          test -f /tmp/test-project-cs/.csharpierrc.yaml
-          test -f /tmp/test-project-cs/.editorconfig
-          test -f /tmp/test-project-cs/scenes/Main.cs
-          test -f /tmp/test-project-cs/docs/csharp-conventions.md
+          test -f /tmp/test-project/MyGodotGame.csproj
+          test -f /tmp/test-project/MyGodotGame.sln
+          test -f /tmp/test-project/GlobalUsings.cs
+          test -f /tmp/test-project/.csharpierrc.yaml
+          test -f /tmp/test-project/.editorconfig
+          test -f /tmp/test-project/scenes/Main.cs
+          test -f /tmp/test-project/docs/csharp-conventions.md
           echo "PASS: All C# files present"
 
       - name: Verify no GDScript files present
         run: |
-          ! test -f /tmp/test-project-cs/scenes/main.gd
-          ! test -f /tmp/test-project-cs/.gdlintrc
-          ! test -f /tmp/test-project-cs/.gdformatrc
-          ! test -d /tmp/test-project-cs/tests_gdunit4
-          echo "PASS: No GDScript files in C# project"
+          ! test -f /tmp/test-project/scenes/main.gd
+          ! test -f /tmp/test-project/.gdlintrc
+          ! test -f /tmp/test-project/.gdformatrc
+          ! test -d /tmp/test-project/tests_gdunit4
+          echo "PASS: No GDScript files"
 
       - name: Verify C# in project.godot features
-        run: grep -q '"C#"' /tmp/test-project-cs/project.godot
+        run: grep -q '"C#"' /tmp/test-project/project.godot
 
       - name: Verify dotnet in .godotrc
         run: |
-          grep -q "dotnet" /tmp/test-project-cs/.godotrc
-          ! grep -q "no-dotnet" /tmp/test-project-cs/.godotrc
+          grep -q "dotnet" /tmp/test-project/.godotrc
+          ! grep -q "no-dotnet" /tmp/test-project/.godotrc
 
-      - name: Verify no NetworkManager
+      - name: Verify NetworkManager in project.godot
         run: |
-          if grep -q "NetworkManager" /tmp/test-project-cs/project.godot; then
-            echo "FAIL: NetworkManager found with multiplayer=false"
-            exit 1
-          fi
-          echo "PASS: No NetworkManager"
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup Godot .NET
-        uses: chickensoft-games/setup-godot@v2
-        with:
-          version: 4.6.0
-          use-dotnet: true
-
-      - name: Restore and build C# project
-        run: |
-          cd /tmp/test-project-cs
-          dotnet restore MyGodotGame.sln
-          dotnet build MyGodotGame.sln --no-restore
-
-  test-csharp-multiplayer:
-    name: Test (csharp, multiplayer=true)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "latest"
-
-      - name: Generate project (csharp, multiplayer=true)
-        run: |
-          uvx copier copy --defaults --trust --data language=csharp --data multiplayer=true . /tmp/test-project-cs-mp
-          ls /tmp/test-project-cs-mp
+          grep -q "NetworkManager.cs" /tmp/test-project/project.godot
+          echo "PASS: NetworkManager autoload present"
 
       - name: Verify NetworkManager.cs exists
-        run: test -f /tmp/test-project-cs-mp/scripts/network/NetworkManager.cs
-
-      - name: Verify NetworkManager in project.godot points to .cs
-        run: |
-          if ! grep -q "NetworkManager.cs" /tmp/test-project-cs-mp/project.godot; then
-            echo "FAIL: NetworkManager.cs not found in project.godot"
-            exit 1
-          fi
-          echo "PASS: NetworkManager.cs in project.godot"
+        run: test -f /tmp/test-project/scripts/network/NetworkManager.cs
 
       - name: Verify multiplayer test helper
         run: |
-          if ! grep -q "SetupOfflineMultiplayer" /tmp/test-project-cs-mp/tests/helpers/TestHelper.cs; then
-            echo "FAIL: SetupOfflineMultiplayer not found in TestHelper.cs"
-            exit 1
-          fi
+          grep -q "SetupOfflineMultiplayer" /tmp/test-project/tests/helpers/TestHelper.cs
           echo "PASS: Multiplayer test helper present"
 
       - name: Verify CLAUDE.md multiplayer section
-        run: grep -q "Multiplayer Patterns" /tmp/test-project-cs-mp/CLAUDE.md
+        run: grep -q "Multiplayer Patterns" /tmp/test-project/CLAUDE.md
+
+      - name: Verify scenes/main.tscn exists
+        run: test -f /tmp/test-project/scenes/main.tscn
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -296,6 +96,6 @@ jobs:
 
       - name: Restore and build C# project
         run: |
-          cd /tmp/test-project-cs-mp
+          cd /tmp/test-project
           dotnet restore MyGodotGame.sln
           dotnet build MyGodotGame.sln --no-restore
