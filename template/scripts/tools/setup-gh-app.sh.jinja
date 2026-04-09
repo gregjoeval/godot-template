@@ -1,4 +1,3 @@
-{% if reviewer_github_app_name %}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -126,4 +125,3 @@ echo "Private key stored at: ${PEM_DEST}"
 echo ""
 echo "The reviewer agent will automatically use these credentials"
 echo "for PR approvals with a distinct identity."
-{% endif %}
