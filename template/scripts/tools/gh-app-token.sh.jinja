@@ -16,7 +16,7 @@ CREDENTIALS_FILE="${GH_APP_CREDENTIALS_FILE:-${HOME}/.config/gh-app/{{ reviewer_
 # --- Validate credentials file exists ---
 if [[ ! -f "${CREDENTIALS_FILE}" ]]; then
   echo "ERROR: Credentials file not found: ${CREDENTIALS_FILE}" >&2
-  echo "Run ./scripts/tools/setup-gh-app.sh to configure, or see docs/github-app-setup.md." >&2
+  echo "Run ./scripts/tools/setup-gh-app.sh to configure." >&2
   exit 1
 fi
 

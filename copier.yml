@@ -2,7 +2,6 @@ _subdirectory: template
 _exclude:
   - copier.yml
   - ".git"
-  - "{% if not reviewer_github_app_name %}docs/github-app-setup.md.jinja{% endif %}"
   - "{% if not reviewer_github_app_name %}scripts/tools/setup-gh-app.sh.jinja{% endif %}"
   - "{% if not reviewer_github_app_name %}scripts/tools/gh-app-token.sh.jinja{% endif %}"
 

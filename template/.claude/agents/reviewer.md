@@ -190,7 +190,7 @@ EOF
 )"
 else
   # Fallback: default gh auth identity (self-approvals do not count on GitHub)
-  echo "WARNING: GitHub App token unavailable — approval posted with default identity. See docs/github-app-setup.md." >&2
+  echo "WARNING: GitHub App token unavailable — approval posted with default identity. Run: make setup-gh-app" >&2
   gh pr review <number> --approve --body "$(cat <<'EOF'
 ## Reviewer Report — APPROVED
 
