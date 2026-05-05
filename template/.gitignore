@@ -28,9 +28,5 @@ __pycache__/
 *.py[cod]
 .venv/
 
-# Agent worktrees
-.claude/worktrees/
-.campfire/
-
-# GitHub App credentials (never commit)
+# Credentials (never commit)
 *.pem

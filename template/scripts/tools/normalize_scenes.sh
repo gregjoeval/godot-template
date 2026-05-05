@@ -18,6 +18,16 @@ if ! command -v "$GODOT" &>/dev/null; then
     exit 0
 fi
 
+# Build C# project first so Godot can discover [GlobalClass] attributes.
+# Without the compiled DLL, Godot's headless import leaves global_script_class_cache.cfg
+# empty and cannot assign UIDs to .cs scripts or update .tres ext_resource entries.
+if command -v dotnet &>/dev/null && ls ./*.csproj 2>/dev/null | grep -q .; then
+    echo "Building C# project for class discovery..."
+    dotnet build --no-incremental -warnaserror 2>&1 | tail -5 || {
+        echo "WARNING: dotnet build failed — scene normalization may be incomplete"
+    }
+fi
+
 echo "Normalizing Godot scene/resource files..."
 output=$(timeout 120 "$GODOT" --headless --import --path . 2>&1) || true
 

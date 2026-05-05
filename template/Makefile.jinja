@@ -21,12 +21,6 @@ bump:
 ## Configure GitHub repo settings and branch protection (requires gh CLI + admin).
 setup-repo:
 	./scripts/tools/setup-repo.sh
-{% if reviewer_github_app_name %}
-
-## Set up GitHub App credentials for reviewer identity.
-setup-gh-app:
-	./scripts/tools/setup-gh-app.sh
-{% endif %}
 
 ## Set up development environment (requires .NET runtime and Python 3).
 setup:

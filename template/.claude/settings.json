@@ -11,7 +11,6 @@
       "WebFetch(*)",
       "Bash(git *)",
       "Bash(gh *)",
-      "Bash(rd *)",
       "Bash(dotnet *)",
       "Bash(pre-commit *)",
       "Bash(ls *)",
@@ -29,22 +28,8 @@
       "Bash(grep *)",
       "Bash(./scripts/tools/*)",
       "Bash(godot *)",
-      "Bash(python *)",
-      "Bash(cf *)"
+      "Bash(python *)"
     ],
     "defaultMode": "dontAsk"
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/plan-handoff.sh"
-          }
-        ]
-      }
-    ]
   }
 }

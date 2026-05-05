@@ -76,3 +76,6 @@ dotnet_diagnostic.CA1001.severity = none
 
 # Static readonly arrays in tests add noise for one-off test data
 dotnet_diagnostic.CA1861.severity = none
+
+# Underscore-separated test names (e.g. Method_Scenario_Expected) are idiomatic in C# testing
+dotnet_diagnostic.CA1707.severity = none

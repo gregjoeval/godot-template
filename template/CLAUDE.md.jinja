@@ -19,122 +19,8 @@ After cloning, install tooling and download Godot:
 
 ```sh
 make setup
-make setup-repo    # configure GitHub repo settings & branch protection (admin, one-time)
-gh extension install agynio/gh-pr-review
+make setup-repo  # configure GitHub repo settings & branch protection (admin, one-time)
 ```
-
-## Session Isolation (MANDATORY)
-
-At the start of every session, before doing anything else (including Environment Bootstrap), call `EnterWorktree` to isolate this session in its own git worktree. This enables parallel Overseer sessions without conflicts.
-
-- Do NOT skip this step, even for quick tasks
-- Plan files, scratch state, and sub-agent worktrees are all worktree-local
-- Ready and Campfire communicate over TCP — they work from any worktree
-- Sub-agents launched with `isolation: "worktree"` work correctly from within a worktree
-
-## Worktree Cleanup
-
-ALL agents — including the Overseer — **must** clean up their worktree before finishing:
-
-1. Ensure all work is committed and pushed (or discarded)
-2. Change back to the main repo
-3. Remove the worktree: `git worktree remove .claude/worktrees/<worktree-name> --force`
-
-Do not leave stale worktrees behind. If stale worktrees exist from previous sessions, clean them up:
-`git worktree list` to find them, then remove with the command above.
-
-## Overseer Role (MANDATORY)
-
-The Overseer (top-level Claude Code session) does NOT write code. Ever.
-
-- **Delegate Planning**: Launch Architect agent when user has a feature/idea/problem
-- **Delegate Execution**: Launch Daemon agent when Ready issues exist
-- **Handle Escalations**: Resolve blockers the Daemon can't handle, relay to user when needed
-
-If you catch yourself about to use Edit, Write, or Bash to modify project files:
-STOP. That is a Developer agent's job. Create a Ready issue and delegate instead.
-
-The only files the Overseer may edit are:
-- `CLAUDE.md` and files under `.claude/` (configuration/memory)
-- Plan files under `.claude/plans/`
-
-**Plan mode** is for infrastructure/config changes the Overseer handles itself (updating CLAUDE.md,
-agent definitions, settings). It is NOT used for feature work — Architect replaces that.
-
-**No exceptions for "small" or "trivial" changes.** The escape hatch is `[manually]` in the user's message.
-
-## Architect Launch Protocol (MANDATORY)
-
-When a user describes a feature, idea, bug, or problem:
-
-1. **Launch the Architect agent**: Use the Agent tool with `subagent_type: "pm"` (uses architect.md)
-   - Pass the user's description in the prompt
-   - Run in foreground — Architect will interview the user
-2. Architect creates PRD, decomposes into vertical slices, creates Ready issues, then returns
-3. After Architect returns → begin Execution Protocol immediately
-4. **Do NOT ask the user what to do next** — the answer is always "launch Daemon"
-
-Any form of approval after Architect returns means start execution immediately.
-
-**Escape hatch** — skip Architect and implement directly when the user's
-message contains `[manually]` (e.g., "[manually] update this file").
-
-## Execution Protocol (MANDATORY)
-
-When Ready issues exist (from Architect or manual creation):
-
-1. **Check queue**: `rd ready --json`
-2. If issues exist, **launch the Daemon agent**: Use the Agent tool with `subagent_type: "daemon"`
-   - Pass the list of Ready issue IDs
-   - Run in foreground — monitor for escalations
-3. Daemon handles the entire Developer/Reviewer lifecycle and returns a report
-4. If Daemon escalates a blocker → Overseer resolves or relays to user, then re-launches Daemon
-5. When Daemon reports all work complete → done
-
-## Developer/Reviewer Cycles
-
-Daemon manages Developer/Reviewer cycles. If Daemon escalates after 2 failed
-Reviewer cycles, re-scope with user.
-
-## Environment Bootstrap
-
-1. Clean up stale worktrees: `./scripts/tools/cleanup-worktrees.sh`
-2. Ensure PATH includes `$HOME/.local/bin` (for `rd` and `cf`)
-3. Verify Ready: `rd status`
-4. Verify `gh auth status` for PR operations
-5. Ensure gh-pr-review extension: `gh extension list | grep -q pr-review || gh extension install agynio/gh-pr-review`
-6. Init Campfire: `cf init 2>/dev/null`
-
-## Campfire
-
-Campfire is an open protocol for AI agent coordination ([getcampfire.dev](https://getcampfire.dev)) — agents discover each other, form groups, and coordinate work via signed messages.
-
-**Agent identity isolation:** Each agent uses a separate Campfire home to avoid shared cursor conflicts:
-
-```sh
-export CF_HOME=~/.campfire-agent-$ISSUE_ID
-```
-
-**Lifecycle:** One campfire per plan. Daemon creates it when starting execution, agents join/leave
-during work, and Daemon cleans up after completion:
-
-```sh
-cf leave <campfire-id>
-```
-
-See the [Campfire docs](https://getcampfire.dev/docs/) for full protocol reference.
-
-## Ready Quick Reference
-
-```bash
-rd ready --json                              # find unblocked work
-rd show <id> --json                          # view issue details
-rd claim <id>                                # claim work (sets status to active)
-rd close <id> --reason "..." --json          # complete work
-rd done <id>                                 # shorthand for close
-```
-
-Always use `--json` flag for programmatic output. Use `rd` for ALL task tracking — no markdown TODOs.
 
 ## Scene/Resource Normalization
 
@@ -144,114 +30,48 @@ After modifying `.tscn`, `.tres`, or `project.godot` files, run:
 ./scripts/tools/normalize_scenes.sh
 ```
 
-This runs Godot headless to normalize serialization (property ordering, UIDs, section order).
-The pre-commit hook runs this automatically when these files are staged, but run it explicitly
-to catch issues early. Skipped gracefully if `godot` is not available.
+This builds the C# project, then runs Godot headless to canonicalize serialization (property
+ordering, UIDs, section order). The pre-commit hook runs this automatically when these files
+are staged. Skipped gracefully if `godot` is not available.
 
-## Backlog Management
+## Pre-commit
 
-**GitHub Issues** = long-term backlog (ideas, future features, bugs to investigate later)
-**Ready** = active sprint work that agents are implementing right now
+`pre-commit` runs on every commit:
+- `dotnet build --warnaserror` validates all C# files
+- `dotnet test` runs gdUnit4Net tests
+- `tres-casing-check` flags snake_case properties in `.tres` `[resource]` sections (won't bind to PascalCase `[Export]`)
+- `shader-no-return` flags `return` in shader processor functions
+- `godot-normalize` re-serializes scene/resource files
 
-### Workflow
-- Ideas/bugs/features get filed as GitHub Issues with labels (`backlog`, `idea`, `bug`, `enhancement`)
-- When ready to implement, a Ready issue is created linked via `--context "gh#<number>: ..."`
-- Developer/Reviewer agents work the Ready issue as normal — they don't interact with GitHub Issues
-- After all linked Ready issues are closed, Daemon closes the GitHub Issue with `gh issue close`
+Bypass selectively: `SKIP=dotnet-test git commit ...` (or comma-separated multiple).
 
-### Fast Path
-When user says "implement X now", Architect creates Ready issues directly — no GitHub Issue needed. GitHub Issues are for the **backlog** (work not being done immediately).
+The Bash permission allow-list lives in `.claude/settings.json`.
 
-## PR Merge Rules
+## TDD Workflow
 
-Before merging any PR, agents **must** use the merge guard:
+For logic changes:
 
-```sh
-./scripts/tools/merge-guard.sh <PR-NUMBER>
-```
-
-This script waits for all checks to pass, then squash-merges and deletes the branch.
-**Never** call `gh pr merge` directly — always go through the guard script.
-
-## Session Completion (All Agents)
-
-Work is NOT complete until `git push` succeeds:
-
-1. Run quality gates if code changed
-2. Update issue status in Ready
-3. `git pull --rebase && git push`
-4. `git status` must show "up to date with origin"
-5. Leave campfire if joined: `cf leave 2>/dev/null`
-6. Clean up your worktree (see Worktree Cleanup section above)
-
-**Never** stop before pushing. **Never** say "ready to push when you are" — the agent must push.
-
-## Permission Model
-
-Bash commands are scoped to an explicit allow-list in `.claude/settings.json`. Safe commands
-(`git`, `gh`, `rd`, `ls`, `grep`, `./scripts/tools/*`, etc.) run without prompts. Unfamiliar
-or destructive commands (`rm -rf`, `curl`, `sudo`, etc.) trigger a user confirmation prompt.
-
-- **`deny` rules are not used** — they are non-functional in Claude Code (as of early 2026)
-- **Chained commands** may bypass individual patterns but still prompt if no pattern matches the first token
-- **Per-agent scoping** is not supported by the platform; behavioral guardrails in agent prompts are the primary enforcement layer
-- Read/Write/Edit/Glob/Grep/Agent are auto-allowed (`defaultMode: dontAsk`)
-
-## Pre-commit: C# Build Check
-
-Pre-commit runs `dotnet build --warnaserror` to validate all C# files. To bypass:
-
-```sh
-SKIP=dotnet-build git commit ...
-```
-
-## TDD Workflow (MANDATORY for agents)
-
-All Developer agents follow test-driven development for logic changes:
-
-1. **Write failing tests first** — commit with `test(<task-id>): ...`
-2. **Implement minimum code** to make tests pass — commit with `feat(<task-id>): ...` or `fix(<task-id>): ...`
+1. **Write failing tests first** — commit with `test: ...`
+2. **Implement** to make tests pass — commit with `feat: ...` or `fix: ...`
 3. **Refactor** if needed (tests must still pass)
 
-**Every bug fix must include a regression test** that reproduces the bug before the fix.
-This is the #1 rule for stopping recurring runtime errors.
+**Every bug fix should include a regression test** that reproduces the bug before the fix.
 
-**What requires tests**: Logic, calculations, state transitions, data transformations.
-**What skips TDD**: Scene-only changes (.tscn/.tres), pure visual/UI, single-line config tweaks.
+**What requires tests**: logic, calculations, state transitions, data transformations.
+**What skips TDD**: scene-only changes (.tscn/.tres), pure visual/UI, single-line config tweaks.
 
-Reviewer agents verify test-first commit ordering and block PRs missing tests for logic changes.
-
-See `docs/testing-conventions.md` for test structure, naming, and patterns.
-
-### Pre-commit test runner
-
-`dotnet test` runs gdUnit4Net tests on every commit.
-Bypass: `SKIP=dotnet-test git commit ...` (or `SKIP=dotnet-build,dotnet-test` to skip both).
+See `docs/testing-conventions.md` for test structure, naming, and gdUnit4Net patterns.
 
 ## Project Architecture
 
-See `docs/DECISIONS.md` for domain language, architectural patterns, collision layers, and key decisions.
-Update this file as the project evolves — agents reference it for project-specific context.
+See `docs/DECISIONS.md` for domain language, architectural patterns, collision layers, and key decisions. Update it as the project evolves.
 
 ## Multiplayer Patterns
 
-This project uses Godot's high-level multiplayer API with server-authoritative architecture.
+This template scaffolds Godot's high-level multiplayer API with server-authoritative architecture:
 
 - **Transport**: `ENetMultiplayerPeer` for networked play, `OfflineMultiplayerPeer` for singleplayer
 - **Authority**: Server (`Multiplayer.IsServer()`) owns game state. Clients request actions via RPC.
 - **Testing**: Use `TestHelper.SetupOfflineMultiplayer(this)` to make `Multiplayer.IsServer()` return `true` in tests
 
-See `docs/DECISIONS.md` for project-specific multiplayer decisions (NetworkManager structure, sync properties, etc.).
-
-## Persistent Agent Memory
-
-Each agent has a memory directory at `.claude/agent-memory/<agent-name>/`.
-
-- `MEMORY.md` auto-loads (first 200 lines). Keep it concise.
-- Create topic files for details, link from MEMORY.md.
-- Update or remove memories that turn out to be wrong or outdated.
-- Organize semantically by topic, not chronologically.
-
-**Save**: Stable patterns, architectural decisions, recurring solutions, user preferences.
-**Don't save**: Session-specific state, unverified observations, CLAUDE.md duplicates.
-**User requests**: When asked to remember something, save it immediately. When asked to forget, remove it.
+See `docs/DECISIONS.md` for project-specific multiplayer decisions (sync properties, NetworkManager structure, etc.).

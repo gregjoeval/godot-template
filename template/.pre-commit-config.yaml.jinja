@@ -14,6 +14,13 @@ repos:
         language: system
         files: '\.gdshader$'
 
+      - id: tres-casing-check
+        name: Check .tres files for snake_case property names
+        entry: ./scripts/tools/check_tres_casing.sh
+        language: system
+        files: '\.tres$'
+        pass_filenames: true
+
       - id: dotnet-build
         name: C# compile and type check
         entry: dotnet build {{ project_pascal }}.sln --no-incremental -warnaserror

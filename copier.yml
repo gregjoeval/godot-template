@@ -2,8 +2,6 @@ _subdirectory: template
 _exclude:
   - copier.yml
   - ".git"
-  - "{% if not reviewer_github_app_name %}scripts/tools/setup-gh-app.sh.jinja{% endif %}"
-  - "{% if not reviewer_github_app_name %}scripts/tools/gh-app-token.sh.jinja{% endif %}"
 
 project_name:
   type: str
@@ -27,8 +25,3 @@ godot_version:
   default: "4.6"
   help: "Godot major.minor version (e.g. 4.6, 4.3 — do not include patch)"
   validator: "{% if not godot_version | regex_search('^4\\.\\d+$') %}Must be 4.x format without patch (e.g. 4.6, 4.3){% endif %}"
-
-reviewer_github_app_name:
-  type: str
-  default: "gjv-ai-reviewer"
-  help: "GitHub App name for reviewer identity (e.g. my-project-reviewer). Leave empty to skip GitHub App setup."
