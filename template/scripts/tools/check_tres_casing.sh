@@ -76,6 +76,11 @@ for file in "${files[@]}"; do
             # Skip if key has no underscore — not a snake_case issue
             echo "$key" | grep -q '_' || continue
 
+            # Skip Godot built-in storage paths (e.g. Theme item keys like
+            # "Panel/colors/font_color"). These contain '/' separators and
+            # are never C# [Export] properties, so snake_case is correct for them.
+            echo "$key" | grep -q '/' && continue
+
             # Skip known Godot built-in keys
             is_builtin_key "$key" && continue
 

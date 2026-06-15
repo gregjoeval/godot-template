@@ -67,7 +67,7 @@ dotnet_diagnostic.IDE0303.severity = none
 dotnet_diagnostic.IDE0304.severity = none
 dotnet_diagnostic.IDE0305.severity = none
 
-[tests/**/*.cs]
+[tests/**.cs]
 # gdUnit4Net test methods are invoked via reflection and must be instance methods
 dotnet_diagnostic.CA1822.severity = none
 

@@ -2,9 +2,10 @@ SOLUTION := {{ project_pascal }}.sln
 
 .PHONY: test build format bump setup
 
-## Run all gdUnit4Net tests.
+## Run all gdUnit4Net tests. GODOT_BIN must point at the godot mono executable
+## (defaults to `godot` on PATH if unset).
 test:
-	dotnet test $(SOLUTION)
+	GODOT_BIN=$${GODOT_BIN:-$$(command -v godot)} dotnet test $(SOLUTION) --settings .runsettings
 
 ## Build with warnings as errors.
 build:

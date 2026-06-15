@@ -8,10 +8,31 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Copy transitive NuGet deps into the output dir so the gdUnit4 test
+         adapter can resolve Castle.Core, Newtonsoft.Json, etc. when running
+         under VSTest. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Godot SDK suppresses runtimeconfig generation by default; testhost
+         needs one to launch the test process. -->
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Mark as a test project so `dotnet test` invokes the VSTest target. -->
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="gdUnit4.api" Version="5.0.0" />
     <PackageReference Include="gdUnit4.test.adapter" Version="3.0.0" />
+    <!-- Pin the SDK-bundled .NET analyzer set explicitly so local-vs-CI
+         analyzer divergence is impossible. Without this pin the CA rule
+         set is whichever ships with the active SDK (CI's setup-dotnet@v4
+         and a Docker sdk:8.0 image can drift independently). 8.0.0 is the
+         latest stable in the 8.x line. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>analyzers</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Meziantou.Analyzer" Version="3.0.44">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>analyzers</IncludeAssets>

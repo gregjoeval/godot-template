@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Delegates to the canonical pre-push hook in scripts/hooks/pre-push.sh.
+# SKIP= is intentionally NOT honored — see docs/DECISIONS.md.
+exec "$(git rev-parse --show-toplevel)/scripts/hooks/pre-push.sh" "$@"
