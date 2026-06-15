@@ -54,7 +54,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
 
       - name: Setup Godot .NET
         uses: chickensoft-games/setup-godot@v2
@@ -75,7 +75,9 @@ jobs:
         run: dotnet csharpier check .
 
       - name: Test
-        run: dotnet test {{ project_pascal }}.sln --no-build
+        env:
+          GODOT_BIN: ${{ "{{" }} env.GODOT {{ "}}" }}
+        run: dotnet test {{ project_pascal }}.sln --no-build --settings .runsettings
 
   shader-lint:
     needs: changes
@@ -98,7 +100,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
