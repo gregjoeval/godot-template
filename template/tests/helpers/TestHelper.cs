@@ -9,7 +9,9 @@ public static class TestHelper
     /// </summary>
     public static void SetupOfflineMultiplayer(Node testSuite)
     {
+        if (testSuite.Multiplayer is null)
+            return;
         var peer = new OfflineMultiplayerPeer();
-        testSuite.GetTree().GetMultiplayer().MultiplayerPeer = peer;
+        testSuite.Multiplayer.MultiplayerPeer = peer;
     }
 }

@@ -38,6 +38,7 @@ are staged. Skipped gracefully if `godot` is not available.
 
 `pre-commit` runs on every commit:
 - `dotnet build --warnaserror` validates all C# files
+- `csharpier-check` verifies CSharpier formatting
 - `dotnet test` runs gdUnit4Net tests
 - `tres-casing-check` flags snake_case properties in `.tres` `[resource]` sections (won't bind to PascalCase `[Export]`)
 - `shader-no-return` flags `return` in shader processor functions

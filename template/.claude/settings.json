@@ -13,6 +13,7 @@
       "Bash(gh *)",
       "Bash(dotnet *)",
       "Bash(pre-commit *)",
+      "Bash(make *)",
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(echo *)",
@@ -28,7 +29,11 @@
       "Bash(grep *)",
       "Bash(./scripts/tools/*)",
       "Bash(godot *)",
-      "Bash(python *)"
+      "Bash(godotenv *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(uv *)",
+      "Bash(uvx *)"
     ],
     "defaultMode": "dontAsk"
   }

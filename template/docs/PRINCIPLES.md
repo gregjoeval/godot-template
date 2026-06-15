@@ -6,6 +6,33 @@ Principles are heuristics with trade-offs, not laws. Apply them when they reduce
 
 ---
 
+## Workflow Principles
+
+These govern how an agent (human or AI) approaches the work, before any code-quality principle applies.
+
+### Surface Assumptions Before Coding
+
+State your assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and name what's confusing rather than guessing.
+
+**When it helps:** Catches scope mismatches early, when they cost minutes instead of a discarded PR. Especially valuable when acceptance criteria are sparse or contradict each other.
+
+**When it hurts:** Over-questioning trivial decisions wastes the user's attention. Naming, internal structure, and conventions don't need confirmation — read the codebase and decide. The bar is "would this assumption, if wrong, change the implementation meaningfully?" If yes, surface it; if no, just proceed.
+
+### Surgical Changes
+
+Touch only what the current request requires. Match existing style, even if you'd do it differently. Clean up orphans your changes created (unused imports, dead vars from a removed call site) — but don't refactor adjacent code or delete pre-existing dead code unless asked.
+
+**When it helps:** Keeps diffs reviewable. Drive-by refactors hide intent and make rollbacks painful. The reviewer's job is "does this PR do what the issue asked?" not "is this whole region of the codebase improved?"
+
+**When it hurts:** Rarely. The exception is when adjacent code is actively in your way (a misnamed function you must call, a comment that contradicts the new behavior). Even then, fix it in a separate `refactor(#N): ...` commit so the diff stays scannable.
+
+### Cross-references to overlapping Karpathy principles
+
+- *Simplicity First* — see **KISS** and **YAGNI** in Core Principles below.
+- *Goal-Driven Execution* — see the TDD workflow in `CLAUDE.md` and the **Principle Priority** section at the bottom of this doc.
+
+---
+
 ## Core Principles
 
 ### KISS — Keep It Simple
