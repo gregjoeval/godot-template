@@ -23,6 +23,15 @@ obj/
 *.user
 *.suo
 
+# Core dumps (from headless test crashes)
+core.*
+
+# gdUnit4Net auto-generated test runner scene (regenerated on every build)
+gdunit4_testadapter_v5/
+
+# VSTest output
+TestResults/
+
 # Python
 __pycache__/
 *.py[cod]
