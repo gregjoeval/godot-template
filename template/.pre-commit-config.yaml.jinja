@@ -37,7 +37,7 @@ repos:
 
       - id: dotnet-test
         name: Run gdUnit4Net tests
-        entry: dotnet test {{ project_pascal }}.sln --no-build
+        entry: bash -c 'GODOT_BIN=${GODOT_BIN:-$(command -v godot)} dotnet test {{ project_pascal }}.sln --no-build --settings .runsettings'
         language: system
         files: '\.cs$'
         pass_filenames: false
