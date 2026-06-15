@@ -99,3 +99,10 @@ jobs:
           cd /tmp/test-project
           dotnet restore MyGodotGame.sln
           dotnet build MyGodotGame.sln --no-restore
+
+      - name: Run tests in generated project
+        env:
+          GODOT_BIN: ${{ env.GODOT }}
+        run: |
+          cd /tmp/test-project
+          make test
